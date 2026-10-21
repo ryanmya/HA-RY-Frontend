@@ -1,25 +1,15 @@
 // import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
-// import App from './App.tsx'
-import { createBrowserRouter, RouterProvider } from "react-router";
-import VisitorsLayout from "./layouts/VisitorsLayout";
-import ComponentsPage from "./pages/ComponentsPage";
-import HomePage from "./pages/HomePage";
-
-const router = createBrowserRouter([
-  {
-    Component: VisitorsLayout,
-    children: [
-      {index: true, Component: HomePage},
-      {path: '/components-page', Component: ComponentsPage}
-    ],
-  },
-]);
+import { RouterProvider } from "react-router";
+import { router } from "./router";
+import AuthGate from "./components/auth-gate";
 
 createRoot(document.getElementById("root")!).render(
   // <StrictMode>
 
   // </StrictMode>
-  <RouterProvider router={router} />,
+  <AuthGate>
+    <RouterProvider router={router} />
+  </AuthGate>,
 );

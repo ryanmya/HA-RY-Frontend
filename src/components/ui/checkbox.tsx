@@ -1,9 +1,17 @@
 import { Checkbox as CheckboxPrimitive } from "@base-ui/react/checkbox"
 import { cn } from "@/lib/utils"
 import { CheckIcon } from "lucide-react"
+import type React from "react"
 
-function Checkbox({ className, ...props }: CheckboxPrimitive.Root.Props) {
-  return (
+type CheckboxProps = CheckboxPrimitive.Root.Props & {
+  /** Text shown to the right of the checkbox; clicking it toggles the checkbox */
+  label?: React.ReactNode
+  /** Which side of the checkbox the label sits on (default "end") */
+  labelPosition?: "start" | "end"
+}
+
+function Checkbox({ className, label, labelPosition = "end", ...props }: CheckboxProps) {
+  const box = (
     <CheckboxPrimitive.Root
       data-slot="checkbox"
       className={cn(
@@ -20,6 +28,16 @@ function Checkbox({ className, ...props }: CheckboxPrimitive.Root.Props) {
         />
       </CheckboxPrimitive.Indicator>
     </CheckboxPrimitive.Root>
+  )
+
+  if (!label) return box
+
+  return (
+    <label className="flex cursor-pointer items-center gap-2 text-sm has-disabled:cursor-not-allowed has-disabled:opacity-50">
+      {labelPosition === "start" && label}
+      {box}
+      {labelPosition === "end" && label}
+    </label>
   )
 }
 

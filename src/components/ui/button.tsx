@@ -19,6 +19,7 @@ const buttonVariants = cva(
         destructive_outline:
           "text-destructive border-border border-destructive",
         link: "text-primary underline-offset-4 hover:underline",
+        muted: "bg-primary-subtle/20 text-primary-foreground hover:bg-primary-subtle/40",
       },
       size: {
         default:
@@ -47,19 +48,42 @@ const buttonVariants = cva(
   },
 );
 
+type ButtonProps = ButtonPrimitive.Props &
+  VariantProps<typeof buttonVariants> & {
+    /** Icon shown before the label, e.g. prependIcon={<Plus />} */
+    prependIcon?: React.ReactNode;
+    /** Icon shown after the label, e.g. appendIcon={<ArrowRight />} */
+    appendIcon?: React.ReactNode;
+  };
+
 function Button({
   className,
   variant = "default",
   size = "default",
   icon,
+  prependIcon,
+  appendIcon,
+  children,
   ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+}: ButtonProps) {
   return (
     <ButtonPrimitive
       data-slot="button"
       className={cn(buttonVariants({ variant, size, icon, className }))}
       {...props}
-    />
+    >
+      {prependIcon && (
+        <span data-icon="inline-start" className="inline-flex">
+          {prependIcon}
+        </span>
+      )}
+      {children}
+      {appendIcon && (
+        <span data-icon="inline-end" className="inline-flex">
+          {appendIcon}
+        </span>
+      )}
+    </ButtonPrimitive>
   );
 }
 

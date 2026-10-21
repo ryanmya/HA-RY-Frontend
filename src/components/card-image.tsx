@@ -33,10 +33,14 @@ export default function CardImage({
   price,
   discountedPrice,
   seats,
+  className,
   ...rest
 }: TypeCardImage) {
   return (
-    <Card className="relative mx-auto w-full max-w-sm pt-0 ring-0" {...rest}>
+    <Card
+      className={cn("relative w-full pt-0 ring-0", className)}
+      {...rest}
+    >
       <div className="absolute inset-0 z-20 aspect-video bg-black/35"></div>
       <img
         src={imageUrl}
@@ -56,7 +60,7 @@ export default function CardImage({
             <Icon icon={"boxicons:star-filled"} />
           </Badge> */}
         </CardContent>
-        <CardTitle className="font-bold">{title}</CardTitle>
+        <CardTitle className="type-card-title">{title}</CardTitle>
         <CardDescription className="flex items-center">
           <span>
             {startDate} {endDate != undefined && "-"} {endDate}

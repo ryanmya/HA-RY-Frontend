@@ -4,7 +4,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "group/badge inline-flex h-5 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-sm border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-all focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3!",
+  "group/badge inline-flex shrink-0 overflow-hidden border border-transparent transition-all focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3!",
   {
     variants: {
       variant: {
@@ -21,9 +21,22 @@ const badgeVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         warning: "bg-warning-subtle text-warning"
       },
+      size: {
+        default:
+          "h-5 w-fit items-center justify-center gap-1 rounded-sm px-2 py-0.5 text-xs font-medium whitespace-nowrap",
+        lg: "w-full items-start gap-3 rounded-lg p-5 text-sm whitespace-normal",
+      },
     },
+    compoundVariants: [
+      { size: "lg", variant: "default", className: "bg-primary-subtle/20" },
+      { size: "lg", variant: "muted", className: "bg-muted-subtle/20" },
+      { size: "lg", variant: "destructive", className: "bg-destructive-subtle/20" },
+      { size: "lg", variant: "success", className: "bg-success-subtle/20" },
+      { size: "lg", variant: "warning", className: "bg-warning-subtle/20" },
+    ],
     defaultVariants: {
       variant: "default",
+      size: "default",
     },
   },
 );
@@ -31,6 +44,7 @@ const badgeVariants = cva(
 function Badge({
   className,
   variant = "default",
+  size = "default",
   render,
   ...props
 }: useRender.ComponentProps<"span"> & VariantProps<typeof badgeVariants>) {
@@ -38,7 +52,7 @@ function Badge({
     defaultTagName: "span",
     props: mergeProps<"span">(
       {
-        className: cn(badgeVariants({ variant }), className),
+        className: cn(badgeVariants({ variant, size }), className),
       },
       props,
     ),
@@ -46,6 +60,7 @@ function Badge({
     state: {
       slot: "badge",
       variant,
+      size,
     },
   });
 }

@@ -1,5 +1,5 @@
 export default function OrganizerDashboardPage() {
     return <div>
-        Organizer Dashboard
+        Organizer Home Page
     </div>
 }
