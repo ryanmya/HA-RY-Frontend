@@ -11,7 +11,7 @@ import type React from "react";
 
 type TypeCardImage = {
   tags?: React.ReactNode;
-  imageUrl: string;
+  imageUrl?: string;
   topLeft?: React.ReactNode;
   title: string;
   startDate: string;
@@ -24,7 +24,7 @@ type TypeCardImage = {
 
 export default function CardImage({
   tags,
-  imageUrl = "https://avatar.vercel.sh/shadcn1",
+  imageUrl = "/images/events/event1.png",
   topLeft,
   title,
   startDate,
@@ -34,11 +34,22 @@ export default function CardImage({
   discountedPrice,
   seats,
   className,
+  onClick,
   ...rest
 }: TypeCardImage) {
   return (
     <Card
-      className={cn("relative w-full pt-0 ring-0", className)}
+      className={cn(
+        "relative w-full pt-0 ring-0",
+        // Only clickable cards get the hover lift and press feedback.
+        onClick &&
+          "cursor-pointer transition duration-200 ease-out hover:-translate-y-1 hover:shadow-lg active:translate-y-0 active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:translate-y-0",
+        className,
+      )}
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => e.key === "Enter" && e.currentTarget.click() : undefined}
       {...rest}
     >
       <div className="absolute inset-0 z-20 aspect-video bg-black/35"></div>

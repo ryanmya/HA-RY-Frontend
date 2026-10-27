@@ -8,6 +8,8 @@ import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
 import OrganizerAttendeesPage from "./pages/organizer/OrganizerAttendeesPage";
+import OrganizerDraftsPage from "./pages/organizer/OrganizerDraftsPage";
+import OrganizerEventsEditorPage from "./pages/organizer/OrganizerEventsEditorPage";
 import OrganizerEventsPage from "./pages/organizer/OrganizerEventsPage";
 import OrganizerHomePage from "./pages/organizer/OrganizerHomePage";
 import OrganizerProfilePage from "./pages/organizer/OrganizerProfilePage";
@@ -42,6 +44,8 @@ export const router = createBrowserRouter([
             children: [
               { index: true, Component: OrganizerHomePage },
               { path: "events", Component: OrganizerEventsPage },
+              { path: "events/:id", Component: OrganizerEventsEditorPage },
+              { path: "drafts", Component: OrganizerDraftsPage },
               { path: "transactions", Component: OrganizerTransactionsPage },
               { path: "attendees", Component: OrganizerAttendeesPage },
               { path: "vouchers", Component: OrganizerVouchersPage },

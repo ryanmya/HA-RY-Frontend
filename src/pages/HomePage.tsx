@@ -3,7 +3,9 @@ import { TextField } from "@/components/text-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import type { TypeEvent } from "@/types";
+import { useInfiniteList } from "@/hooks/useInfiniteList";
+import { getEvents } from "@/lib/events";
+import { formatCurrency } from "@/lib/utils";
 import { Icon } from "@iconify/react";
 
 type TypeEventGroup = {
@@ -11,6 +13,9 @@ type TypeEventGroup = {
   count: number;
   icon: string;
 };
+
+const formatDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
 
 export default function HomePage() {
   const eventGroup: TypeEventGroup[] = [
@@ -22,59 +27,8 @@ export default function HomePage() {
     { title: "Gratis", count: 412, icon: "lucide:ticket" },
   ];
 
-  const tickets: TypeEvent[] = [
-    {
-      id: "evt-001",
-      title: "Bromo Sunrise Trek",
-      imageUrl: "/images/events/event1.png",
-      category: "Nature",
-      rating: 4.7,
-      startDate: "2026-10-04",
-      endDate: "2026-10-06",
-      place: "Mount Bromo, East Java",
-      price: 1200000,
-      discountedPrice: 900000,
-      seats: 10,
-      voucherPercent: 25,
-    },
-    {
-      id: "evt-002",
-      title: "Jakarta Jazz Night",
-      imageUrl: "/images/events/event1.png",
-      category: "Music",
-      rating: 4.9,
-      startDate: "2026-11-14",
-      endDate: "2026-11-14",
-      place: "JIExpo Kemayoran, Jakarta",
-      price: 850000,
-      seats: 120,
-    },
-    {
-      id: "evt-003",
-      title: "Bali Food Festival",
-      imageUrl: "/images/events/event1.png",
-      category: "Culinary",
-      rating: 4.5,
-      startDate: "2026-12-05",
-      endDate: "2026-12-07",
-      place: "Renon Square, Denpasar",
-      price: 150000,
-      discountedPrice: 120000,
-      seats: 300,
-      voucherPercent: 20,
-    },
-    {
-      id: "evt-004",
-      title: "UI/UX Design Workshop",
-      imageUrl: "/images/events/event1.png",
-      category: "Education",
-      startDate: "2026-11-22",
-      // endDate: "2026-11-22",
-      place: "Purwadhika BSD, Tangerang",
-      price: 350000,
-      seats: 25,
-    },
-  ];
+  // Loads 12 events at a time as the user scrolls.
+  const { items: events, loading, error, sentinelRef } = useInfiniteList((cursor) => getEvents({ cursor }));
 
   return (
     <div className="flex border-none p-0 flex-col gap-8">
@@ -127,31 +81,29 @@ export default function HomePage() {
         </Button>
       </div>
       <div className="grid grid-cols-4 gap-2 px-20">
-        {tickets.map((e, i) => (
+        {events.map((e) => (
           <CardImage
-            {...e}
-            key={i}
-            tags={
-              <>
-                <Badge variant={"default"}>{e.category}</Badge>
-                {e.rating && (
-                  <Badge variant={"success"}>
-                    {e.rating}
-                    <Icon icon={"boxicons:star-filled"} />
-                  </Badge>
-                )}
-              </>
-            }
+            key={e.id}
+            title={e.name}
+            place={e.location}
+            startDate={formatDate(e.startDate)}
+            endDate={formatDate(e.endDate)}
+            price={Number(e.lowestPrice ?? 0)}
+            seats={e.availableSeats}
+            tags={<Badge variant={"default"}>{e.category}</Badge>}
             topLeft={
-              e.voucherPercent && (
+              e.bestVoucher && (
                 <Badge variant={"destructive"}>
-                  Discount {e.voucherPercent}%
+                  Voucher {formatCurrency(Number(e.bestVoucher.discountAmount), "IDR")}
                 </Badge>
               )
             }
           />
         ))}
       </div>
+      <div ref={sentinelRef} />
+      {loading && <div className="px-20 text-muted-foreground">Memuat acara…</div>}
+      {error && <div className="px-20 text-destructive">{error}</div>}
     </div>
   );
 }

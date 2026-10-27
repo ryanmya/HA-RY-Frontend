@@ -131,11 +131,19 @@ export default function RegisterPage() {
                   Kata sandi tidak sama.
                 </span>
               )}
-              {selectedRole == "CUSTOMER" && (
+              {selectedRole == "CUSTOMER" ? (
                 <TextField
                   name="referredByCode"
                   label="KODE REFERAL - OPTIONAL"
                 />
+              ) : (
+                <>
+                  <TextField
+                    name="eventOrganizerName"
+                    label="NAMA PENYELENGGARA (TANPA SPASI)"
+                  />
+                  <TextField name="role" label="PERAN - OPTIONAL" />
+                </>
               )}
               <Checkbox
                 label="Saya setuju dengan Syarat Layanan dan Kebijakan Privasi."

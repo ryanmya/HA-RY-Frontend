@@ -10,6 +10,7 @@ export type OrganizerNavItem = {
 export const organizerNav: OrganizerNavItem[] = [
   { label: "Ringkasan", to: "/organizer" },
   { label: "Acara", to: "/organizer/events", count: 26 },
+  { label: "Draf Acara", to: "/organizer/drafts" },
   { label: "Transaksi", to: "/organizer/transactions", count: 7, countTone: "destructive" },
   { label: "Peserta", to: "/organizer/attendees" },
   { label: "Voucher", to: "/organizer/vouchers" },

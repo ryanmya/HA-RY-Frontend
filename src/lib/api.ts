@@ -111,4 +111,10 @@ export const api = {
       method: "POST",
       body: body instanceof FormData ? body : JSON.stringify(body),
     }),
+  patch: <T>(path: string, body?: unknown, init?: RequestInit) =>
+    request<T>(path, {
+      ...init,
+      method: "PATCH",
+      body: body instanceof FormData ? body : JSON.stringify(body),
+    }),
 };

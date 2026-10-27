@@ -2,14 +2,27 @@ import { api, ApiError, refreshAccessToken } from "@/lib/api"
 import type { TypeRoles } from "@/types/users"
 import { useAuthStore, type AuthUser } from "@/stores/auth"
 
-// TODO: match these field names and the endpoint to the backend.
-export type RegisterPayload = {
-  userType: TypeRoles
+// Mirrors the backend's customerSignUpSchema / organizerSignUpSchema.
+type BaseRegisterPayload = {
   name: string
   email: string
   password: string
-  referralByCode?: string
 }
+
+export type CustomerRegisterPayload = BaseRegisterPayload & {
+  userType: "CUSTOMER"
+  referredByCode?: string
+}
+
+export type OrganizerRegisterPayload = BaseRegisterPayload & {
+  userType: "ORGANIZER"
+  // No spaces allowed.
+  eventOrganizerName: string
+  // Backend accepts "ADMIN" or "SUPER_ADMIN" and defaults to "ADMIN" when left out.
+  role?: string
+}
+
+export type RegisterPayload = CustomerRegisterPayload | OrganizerRegisterPayload
 
 // Sign-up / sign-in response (the `data` part of the backend's { message, data }).
 export type AuthResponse = {

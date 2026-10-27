@@ -4,12 +4,18 @@ import UserMenu from "@/components/user-menu";
 import { useNavSlots } from "@/hooks/useNavSlots";
 import OrganizerSidebar from "@/pages/organizer/components/OrganizerSidebar";
 import { organizerNav } from "@/pages/organizer/components/organizer-nav";
+import EventEditorDialog from "@/pages/organizer/components/EventEditorDialog";
+import { useEventEditorStore } from "@/stores/event-editor";
 import { Outlet, useLocation } from "react-router";
+import { useAuthStore } from "@/stores/auth";
 
 export default function OrganizerLayout() {
   const { pathname } = useLocation();
   // The navbar title follows the active sidebar entry.
   const title = organizerNav.find((item) => item.to === pathname.replace(/\/$/, ""))?.label;
+  const showUser = useAuthStore((s) => s.user)
+  console.log(showUser);
+  const openEditor = useEventEditorStore((s) => s.openEditor);
 
   const slots = useNavSlots({
     center: <div className="font-semibold">{title}</div>,
@@ -20,7 +26,7 @@ export default function OrganizerLayout() {
           <div>bulan</div>
           <div>tahun</div>
         </div>
-        <Button>Buat Acara</Button>
+        <Button onClick={() => openEditor()}>Buat Acara</Button>
         <UserMenu />
       </div>
     ),
@@ -33,6 +39,7 @@ export default function OrganizerLayout() {
         <Navbar {...slots} />
         <Outlet />
       </div>
+      <EventEditorDialog />
     </div>
   );
 }
