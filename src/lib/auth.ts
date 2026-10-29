@@ -30,11 +30,25 @@ export type AuthResponse = {
   user: AuthUser
 }
 
-export async function register(payload: RegisterPayload, userType: TypeRoles | undefined) {
+export async function register(
+  payload: RegisterPayload,
+  userType: TypeRoles | undefined,
+  profilePicture?: File,
+) {
 
   if(!userType) throw new Error("invalid user type");
 
-  const res = await api.post<AuthResponse>(`/auth/${userType.toLowerCase()}/sign-up`, payload)
+  let requestBody: RegisterPayload | FormData = payload
+  if (profilePicture) {
+    const formData = new FormData()
+    Object.entries(payload).forEach(([key, value]) => {
+      formData.append(key, value)
+    })
+    formData.append("profilePicture", profilePicture)
+    requestBody = formData
+  }
+
+  const res = await api.post<AuthResponse>(`/auth/${userType.toLowerCase()}/sign-up`, requestBody)
   // The backend returns the raw user row without userType, so add it from the endpoint we called.
   res.user = { ...res.user, userType }
   useAuthStore.getState().setAuth(res.token, res.user)

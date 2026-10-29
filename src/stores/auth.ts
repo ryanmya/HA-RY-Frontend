@@ -7,6 +7,7 @@ export type AuthUser = {
   name: string
   email: string
   userType: TypeRoles
+  profilePicture?: string | null
 }
 
 type AuthState = {

@@ -20,11 +20,40 @@ import { Checkbox } from "@/components/ui/checkbox";
 import type { TypeRoles } from "@/types/users";
 import React, { useState } from "react";
 
+const fieldTitles: Record<string, string> = {
+  userType: "JENIS AKUN",
+  name: "NAMA LENGKAP",
+  email: "EMAIL",
+  password: "KATA SANDI",
+  profilePicture: "FOTO PROFIL",
+  referredByCode: "KODE REFERAL",
+  eventOrganizerName: "NAMA PENYELENGGARA",
+  role: "PERAN",
+};
+
+const MAX_PROFILE_IMAGE_SIZE = 5 * 1024 * 1024;
+
+function getErrorMessage(err: unknown) {
+  if (!(err instanceof ApiError)) return "Terjadi kesalahan. Coba lagi.";
+
+  const fieldError = /^([A-Za-z][A-Za-z0-9]*):/.exec(err.message);
+  if (!fieldError) return err.message;
+
+  const title = fieldTitles[fieldError[1]];
+  return title
+    ? `${title} : ${err.message.slice(fieldError[0].length)}`
+    : err.message;
+}
+
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [selectedRole, setSelectedRole] = useState<TypeRoles>("CUSTOMER");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [profilePicture, setProfilePicture] = useState<File | null>(null);
+  const [profilePictureError, setProfilePictureError] = useState<string | null>(
+    null,
+  );
   const [agreed, setAgreed] = useState(false);
   const passwordMismatch =
     confirmPassword !== "" && password !== confirmPassword;
@@ -33,24 +62,24 @@ export default function RegisterPage() {
 
   const handleSubmit: React.SubmitEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();
+    if (profilePictureError) return;
+
     const getFields = Object.fromEntries(
       [...new FormData(e.currentTarget)].filter(
-        ([, v]) => typeof v !== "string" || v.trim() !== "",
+        ([, v]) => typeof v === "string" && v.trim() !== "",
       ),
     );
-    console.log(getFields);
     setFormError(null);
     setSubmitting(true);
     try {
       const { user } = await register(
         getFields as RegisterPayload,
         selectedRole,
+        profilePicture ?? undefined,
       );
       navigate(homePathFor(user.userType), { replace: true });
     } catch (err) {
-      setFormError(
-        err instanceof ApiError ? err.message : "Terjadi kesalahan. Coba lagi.",
-      );
+      setFormError(getErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -87,6 +116,11 @@ export default function RegisterPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
+            {formError && (
+                <Badge variant="destructive" size="lg">
+                  <span>{formError}</span>
+                </Badge>
+              )}
             <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
               <div className="flex gap-2">
                 <RadioCard
@@ -110,6 +144,42 @@ export default function RegisterPage() {
               </div>
               <TextField name="name" label="NAMA LENGKAP" />
               <TextField name="email" label="EMAIL" type="email" />
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="profilePicture"
+                  className="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+                >
+                  FOTO PROFIL (OPSIONAL)
+                </label>
+                <input
+                  id="profilePicture"
+                  name="profilePicture"
+                  type="file"
+                  accept="image/*"
+                  aria-invalid={Boolean(profilePictureError)}
+                  className="rounded-xl border border-border bg-white px-4 py-3 text-sm text-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-semibold file:text-primary-foreground"
+                  onChange={(e) => {
+                    const file = e.currentTarget.files?.[0] ?? null;
+                    if (file && file.size > MAX_PROFILE_IMAGE_SIZE) {
+                      setProfilePicture(null);
+                      setProfilePictureError("Ukuran foto profil maksimal 5 MB.");
+                      e.currentTarget.value = "";
+                      return;
+                    }
+
+                    setProfilePicture(file);
+                    setProfilePictureError(null);
+                  }}
+                />
+                <span className="text-xs text-muted-foreground">
+                  Format gambar, maksimal 5 MB.
+                </span>
+                {profilePictureError && (
+                  <span className="text-xs text-destructive">
+                    {profilePictureError}
+                  </span>
+                )}
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 <TextField
                   name="password"
@@ -140,25 +210,27 @@ export default function RegisterPage() {
                 <>
                   <TextField
                     name="eventOrganizerName"
-                    label="NAMA PENYELENGGARA (TANPA SPASI)"
+                    label="NAMA PENYELENGGARA (FROM REGISTRATION TO COMPANY)"
                   />
                   <TextField name="role" label="PERAN - OPTIONAL" />
                 </>
+              )}
+              {selectedRole === "CUSTOMER" && (
+                <span className="text-xs text-primary-subtle">
+                  Kode referal Anda sendiri dibuat otomatis setelah mendaftar dan
+                  tidak bisa diubah.
+                </span>
               )}
               <Checkbox
                 label="Saya setuju dengan Syarat Layanan dan Kebijakan Privasi."
                 checked={agreed}
                 onCheckedChange={setAgreed}
               />
-              {formError && (
-                <Badge variant="destructive" size="lg">
-                  <span>{formError}</span>
-                </Badge>
-              )}
               <Button
                 type="submit"
                 disabled={
                   submitting ||
+                  Boolean(profilePictureError) ||
                   !agreed ||
                   !password ||
                   password !== confirmPassword
@@ -173,10 +245,6 @@ export default function RegisterPage() {
                   </>
                 )}
               </Button>
-              <span className="text-xs text-primary-subtle">
-                Kode referal Anda sendiri dibuat otomatis setelah mendaftar dan
-                tidak bisa diubah.
-              </span>
             </form>
           </CardContent>
         </Card>

@@ -9,6 +9,7 @@ import { useAuthStore } from "@/stores/auth";
 export default function UserMenu() {
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
+  const profilePicture = user?.profilePicture;
 
   const handleLogout = async () => {
     await logout();
@@ -19,9 +20,21 @@ export default function UserMenu() {
     <Popover.Root>
       <Popover.Trigger
         aria-label="Akun"
-        className={cn(buttonVariants({ variant: "outline", size: "icon-lg" }), "rounded-full")}
+        className={cn(
+          buttonVariants({ variant: "outline", size: "icon-lg" }),
+          "overflow-hidden rounded-full p-0",
+        )}
       >
-        <UserIcon />
+        {profilePicture ? (
+          <img
+            src={profilePicture}
+            alt=""
+            className="size-full rounded-full object-cover"
+            decoding="async"
+          />
+        ) : (
+          <UserIcon />
+        )}
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Positioner side="bottom" align="end" sideOffset={8} className="z-200">

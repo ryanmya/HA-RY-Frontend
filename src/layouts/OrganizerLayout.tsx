@@ -16,16 +16,23 @@ export default function OrganizerLayout() {
   const showUser = useAuthStore((s) => s.user)
   console.log(showUser);
   const openEditor = useEventEditorStore((s) => s.openEditor);
+  const now = new Date();
+  const today = new Intl.DateTimeFormat("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(now);
+  const dateTime = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, "0"),
+    String(now.getDate()).padStart(2, "0"),
+  ].join("-");
 
   const slots = useNavSlots({
     center: <div className="font-semibold">{title}</div>,
     right: (
       <div className="flex flex-row gap-4 items-center">
-        <div className="flex gap-2">
-          <div>hari</div>
-          <div>bulan</div>
-          <div>tahun</div>
-        </div>
+        <time dateTime={dateTime}>{today}</time>
         <Button onClick={() => openEditor()}>Buat Acara</Button>
         <UserMenu />
       </div>
