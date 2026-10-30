@@ -9,7 +9,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 // Height 32, padding 8/13, radius 999, label 12.5/600
 const chipBase =
   "inline-flex h-8 items-center gap-1 rounded-full border px-[13px] py-2 text-[12.5px] font-semibold whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50";
-const chipOff = "border-border bg-white text-foreground hover:bg-muted-subtle";
+const chipOff = "border-border bg-field text-foreground hover:bg-muted-subtle";
 const chipOn = "border-primary bg-primary-subtle text-primary";
 
 const chipVariants = cva(chipBase, {

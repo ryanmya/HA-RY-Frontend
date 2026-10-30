@@ -5,9 +5,80 @@ import { ApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { createVoucher } from "@/lib/vouchers";
 import type { Voucher, VoucherInput } from "@/types/event";
-import { useState } from "react";
+import { ImageIcon } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 // Shared building blocks for the create-event dialog and the edit-event page.
+
+export const MAX_EVENT_IMAGE_SIZE = 1024 * 1024;
+
+// Large banner-style image picker. Shows the picked file, else `currentUrl`, else a placeholder.
+// Files over 1 MB are rejected and never reach `onChange`.
+export function ImagePicker({
+  file,
+  currentUrl,
+  onChange,
+}: {
+  file: File | null;
+  currentUrl?: string | null;
+  onChange: (file: File | null) => void;
+}) {
+  const [error, setError] = useState<string | null>(null);
+  const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
+  useEffect(() => () => {
+    if (preview) URL.revokeObjectURL(preview);
+  }, [preview]);
+
+  const src = preview ?? currentUrl ?? null;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <label
+        className={cn(
+          "group relative flex aspect-21/9 w-full cursor-pointer items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-border bg-field transition-colors hover:border-primary",
+          error && "border-destructive",
+        )}
+      >
+        {src ? (
+          <>
+            <img src={src} alt="Gambar acara" className="h-full w-full object-cover" />
+            <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-sm font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100">
+              Ganti gambar
+            </span>
+          </>
+        ) : (
+          <div className="flex flex-col items-center gap-2 text-muted-foreground">
+            <ImageIcon className="size-10" />
+            <span className="text-sm font-semibold">Klik untuk unggah gambar acara</span>
+            <span className="text-xs">Format gambar, maksimal 1 MB</span>
+          </div>
+        )}
+        <input
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          onChange={(e) => {
+            const picked = e.currentTarget.files?.[0] ?? null;
+            e.currentTarget.value = "";
+            if (!picked) return;
+            if (picked.size > MAX_EVENT_IMAGE_SIZE) {
+              setError("Ukuran gambar maksimal 1 MB.");
+              return;
+            }
+            setError(null);
+            onChange(picked);
+          }}
+        />
+      </label>
+      {error && <span className="text-xs text-destructive">{error}</span>}
+      {file && (
+        <Button variant="ghost" size="sm" className="self-start" onClick={() => onChange(null)}>
+          Hapus gambar
+        </Button>
+      )}
+    </div>
+  );
+}
 
 // Two-option pill switch, e.g. Berbayar / Gratis.
 export function Segmented<T extends string>({
@@ -51,7 +122,7 @@ export function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-4 rounded-2xl bg-white p-6 ring-1 ring-foreground/5">
+    <section className="flex flex-col gap-4 rounded-2xl bg-card p-6 ring-1 ring-foreground/5">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold">{title}</h2>
         {action}

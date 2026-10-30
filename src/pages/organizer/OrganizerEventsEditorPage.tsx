@@ -7,7 +7,7 @@ import { getEventById, updateEvent } from "@/lib/events";
 import type { OrganizerEvent } from "@/types/event";
 import { useEffect, useState } from "react";
 import { NavLink, useParams } from "react-router";
-import { Section, Segmented, VoucherPanel } from "./components/event-form";
+import { ImagePicker, Section, Segmented, VoucherPanel } from "./components/event-form";
 
 // The backend sends full ISO date-times; date inputs need YYYY-MM-DD.
 const toDateInput = (iso: string) => iso.slice(0, 10);
@@ -22,6 +22,7 @@ export default function OrganizerEventsEditorPage() {
   const [seats, setSeats] = useState(0);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [image, setImage] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -37,13 +38,14 @@ export default function OrganizerEventsEditorPage() {
       })
       .catch(() => setLoadError("Gagal memuat acara."));
   }, [id]);
-  console.log(event);
+  
   if (loadError) return <div className="p-6 text-destructive">{loadError}</div>;
   if (!event)
     return <div className="p-6 text-muted-foreground">Memuat acara…</div>;
 
   const minSeats = event.availableSeats;
   const dirty =
+    image !== null ||
     seats !== event.availableSeats ||
     startDate !== toDateInput(event.startDate) ||
     endDate !== toDateInput(event.endDate);
@@ -70,8 +72,10 @@ export default function OrganizerEventsEditorPage() {
         availableSeats: seats,
         startDate,
         endDate,
+        eventPicture: image ?? undefined,
       });
       setEvent({ ...event, ...updated });
+      setImage(null);
       setSaved(true);
     } catch (err) {
       setError(
@@ -110,6 +114,8 @@ export default function OrganizerEventsEditorPage() {
             <span>Perubahan tersimpan.</span>
           </Badge>
         )}
+
+        <ImagePicker file={image} currentUrl={event.eventPicture} onChange={setImage} />
 
         <Section title="Informasi dasar">
           <TextField label="Nama acara" value={event.name} disabled />

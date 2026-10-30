@@ -2,9 +2,17 @@ import { api } from "@/lib/api";
 import type { EventInput, EventSummary, OrganizerEvent } from "@/types/event";
 import { toQuery, type PageParams, type Paginated } from "@/types/pagination";
 //get
+export type EventFilters = {
+  /** Free text; the backend matches it against every text field (name, location, category, description…). */
+  search?: string;
+  /** YYYY-MM-DD; events running at any point between `from` and `to` (inclusive). */
+  from?: string;
+  to?: string;
+};
+
 // Public list of active events, for the homepage.
-export function getEvents({ limit = 12, cursor }: PageParams = {}) {
-  return api.get<Paginated<EventSummary>>(`/events${toQuery({ limit, cursor })}`);
+export function getEvents({ limit = 12, cursor, search, from, to }: PageParams & EventFilters = {}) {
+  return api.get<Paginated<EventSummary>>(`/events/all-event${toQuery({ limit, cursor, search, from, to })}`);
 }
 
 // The logged-in organizer's events; the backend reads the organizer from the access token.
@@ -13,14 +21,25 @@ export function getEventsByOrganizer({ limit = 12, cursor }: PageParams = {}) {
 }
 
 export function getEventById(id: string) {
-  return api.get<OrganizerEvent>(`/events/${id}`);
+  return api.get<OrganizerEvent>(`/events/find-event/${id}`);
+}
+// Plain JSON, or multipart when `eventPicture` is set. Files go as they are; other
+// non-string values (ticketTypes, numbers, booleans) are JSON-encoded for the backend to parse.
+function toBody(input: EventInput) {
+  if (!input.eventPicture) return input;
+  const form = new FormData();
+  Object.entries(input).forEach(([key, value]) => {
+    if (value === undefined) return;
+    form.append(key, value instanceof File || typeof value === "string" ? value : JSON.stringify(value));
+  });
+  return form;
 }
 //post
 export function createEvent(input: EventInput) {
-  return api.post<unknown>("/events/event", input);
+  return api.post<unknown>("/events/event", toBody(input));
 }
 //patch
 // The backend expects the full event (with `id`), not just the changed fields.
 export function updateEvent(input: EventInput & { id: string }) {
-  return api.patch<OrganizerEvent>("/events/event", input);
+  return api.patch<OrganizerEvent>("/events/event", toBody(input));
 }

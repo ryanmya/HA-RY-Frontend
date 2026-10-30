@@ -34,6 +34,7 @@ export type EventInput = {
   availableSeats: number;
   isFree: boolean;
   ticketTypes: TicketTypeInput[];
+  eventPicture?: File,
 };
 
 // Matches the backend's voucherInputSchema (POST /voucher/:eventId).
@@ -67,12 +68,14 @@ export type EventDraft = {
 };
 
 // An event row as the backend returns it. Dates are full ISO date-times and prices are decimal strings.
-export type OrganizerEvent = Omit<EventInput, "id" | "ticketTypes"> & {
+export type OrganizerEvent = Omit<EventInput, "id" | "ticketTypes" | "eventPicture"> & {
   id: string;
   organizerId: string;
   eventOrganizerName: string;
   createdAt: string;
   updatedAt: string;
+  /** Image URL; the request sends a File under the same name. */
+  eventPicture?: string | null;
   // Only present when the backend includes them.
   ticketTypes?: { id: string; name: string; price: string | number }[];
   vouchers?: Voucher[];

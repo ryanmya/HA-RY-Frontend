@@ -5,7 +5,7 @@ import { organizerNav } from "./organizer-nav";
 
 export default function OrganizerSidebar() {
   return (
-    <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col gap-6 border-r bg-white p-4">
+    <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col gap-6 border-r bg-card p-4">
       <div className="flex flex-col px-2">
         <Logo />
         <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">

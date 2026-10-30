@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 const fieldLabel =
   "text-xs font-semibold tracking-wider text-muted-foreground uppercase";
 const fieldBox =
-  "rounded-xl border-border bg-white px-4 text-[15px] md:text-[15px] text-foreground focus-visible:border-primary focus-visible:ring-primary/20";
+  "rounded-xl border-border bg-field px-4 text-[15px] md:text-[15px] text-foreground focus-visible:border-primary focus-visible:ring-primary/20";
 
 type FieldWrapperProps = {
   id: string;

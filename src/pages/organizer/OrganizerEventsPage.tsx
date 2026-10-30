@@ -27,6 +27,7 @@ export default function OrganizerEventsPage() {
         {events.map((e) => (
           <CardImage
             key={e.id}
+            imageUrl={e.eventPicture ?? undefined}
             title={e.name}
             place={e.location}
             startDate={formatDate(e.startDate)}

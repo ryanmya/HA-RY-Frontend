@@ -9,7 +9,7 @@ import { createEvent } from "@/lib/events";
 import { useEventDraftsStore } from "@/stores/event-drafts";
 import { useEventEditorStore } from "@/stores/event-editor";
 import type { EventDraft, EventInput, TicketTypeInput } from "@/types/event";
-import { Section, Segmented } from "./event-form";
+import { ImagePicker, Section, Segmented } from "./event-form";
 import { XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -30,6 +30,8 @@ export default function EventEditorDialog() {
   const { saveDraft, removeDraft } = useEventDraftsStore();
 
   const [event, setEvent] = useState<EventInput>(emptyEvent);
+  // Files can't go into localStorage, so drafts don't keep the image.
+  const [image, setImage] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
 
@@ -37,6 +39,7 @@ export default function EventEditorDialog() {
   useEffect(() => {
     if (!open) return;
     setEvent(draft?.event ?? emptyEvent());
+    setImage(null);
     setError(null);
   }, [open, draft]);
 
@@ -64,6 +67,7 @@ export default function EventEditorDialog() {
         ...event,
         // Free events don't need ticket types; drop empty rows either way.
         ticketTypes: event.isFree ? [] : event.ticketTypes.filter((t) => t.name.trim()),
+        eventPicture: image ?? undefined,
       });
       if (draft) removeDraft(draft.id);
       markEventsChanged();
@@ -112,6 +116,8 @@ export default function EventEditorDialog() {
                 <span>{error}</span>
               </Badge>
             )}
+
+            <ImagePicker file={image} onChange={setImage} />
 
             {/* 1. Informasi dasar */}
             <Section title="Informasi dasar">

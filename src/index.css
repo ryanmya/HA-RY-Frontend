@@ -44,6 +44,7 @@
     --color-popover: var(--popover);
     --color-card-foreground: var(--card-foreground);
     --color-card: var(--card);
+    --color-field: var(--field);
     --color-foreground: var(--foreground);
     --color-background: var(--background);
     --radius-sm: calc(var(--radius) * 0.6);
@@ -63,8 +64,11 @@
     --warning-subtle: #FFFAEB;
     --background: #F2F4F7;
     --foreground: oklch(0.145 0 0);
+    /* Surfaces (cards, popovers, navbar) stay pure white; controls that sit on them
+       (inputs, chips, pickers) use the off-white --field so they stand apart. */
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.145 0 0);
+    --field: #F7F8FA;
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.145 0 0);
     --primary: #1F45D6;
@@ -102,6 +106,7 @@
     --foreground: oklch(0.985 0 0);
     --card: oklch(0.205 0 0);
     --card-foreground: oklch(0.985 0 0);
+    --field: oklch(0.24 0 0);
     --popover: oklch(0.205 0 0);
     --popover-foreground: oklch(0.985 0 0);
     --primary: oklch(0.922 0 0);

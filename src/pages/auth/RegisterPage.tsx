@@ -157,7 +157,7 @@ export default function RegisterPage() {
                   type="file"
                   accept="image/*"
                   aria-invalid={Boolean(profilePictureError)}
-                  className="rounded-xl border border-border bg-white px-4 py-3 text-sm text-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-semibold file:text-primary-foreground"
+                  className="rounded-xl border border-border bg-field px-4 py-3 text-sm text-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-semibold file:text-primary-foreground"
                   onChange={(e) => {
                     const file = e.currentTarget.files?.[0] ?? null;
                     if (file && file.size > MAX_PROFILE_IMAGE_SIZE) {

@@ -4,31 +4,47 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import UserMenu from "@/components/user-menu";
 import { useNavSlots } from "@/hooks/useNavSlots";
+import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
 import { NavLink, Outlet } from "react-router";
+
+type TypeMenu = {
+  to: string;
+  name: string;
+  hide: boolean;
+};
 
 export default function VisitorsLayout() {
   const isLoggedIn = useAuthStore((s) => !!s.accessToken);
   const isOrganizer = useAuthStore((s) => s.user?.userType === "ORGANIZER");
 
+  const navMenu: TypeMenu[] = [
+    {
+      to: "/",
+      name: "Events",
+      hide: false,
+    },
+    {
+      to: "/my-orders",
+      name: "",
+      hide: !isLoggedIn || isOrganizer,
+    },
+    // {
+    //   to: "",
+    //   name: "",
+    //   hide: false,
+    // },
+  ];
+
   const slots = useNavSlots({
     left: <Logo />,
     center: (
       <div className="flex gap-2">
-        <NavLink to="/" className={buttonVariants({ variant: "ghost" })}>
-          Events
-        </NavLink>
-        {isLoggedIn && !isOrganizer && (
-          <NavLink to="/my-orders" className={buttonVariants({ variant: "ghost" })}>
-            My Orders
+        {navMenu.map((e) => (
+          <NavLink to={e.to} className={cn(buttonVariants({ variant: "ghost" }), e.hide && "hidden")}>
+            {e.name}
           </NavLink>
-        )}
-        <NavLink
-          to="/components-page"
-          className={buttonVariants({ variant: "ghost" })}
-        >
-          Components
-        </NavLink>
+        ))}
       </div>
     ),
     right: (
@@ -36,7 +52,10 @@ export default function VisitorsLayout() {
         {isLoggedIn ? (
           <>
             {isOrganizer ? (
-              <NavLink to="/organizer" className={buttonVariants({ variant: "default" })}>
+              <NavLink
+                to="/organizer"
+                className={buttonVariants({ variant: "default" })}
+              >
                 Dashboard
               </NavLink>
             ) : (
