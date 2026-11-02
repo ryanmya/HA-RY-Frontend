@@ -52,12 +52,18 @@ export default function CardImage({
       onKeyDown={onClick ? (e) => e.key === "Enter" && e.currentTarget.click() : undefined}
       {...rest}
     >
-      <div className="absolute inset-0 z-20 aspect-video bg-black/35"></div>
-      <img
-        src={imageUrl}
-        alt="Event Cover"
-        className="relative z-10 aspect-video w-full object-cover brightness-60 grayscale dark:brightness-40"
-      />
+      {imageUrl ? (
+        <>
+          <div className="absolute inset-0 z-20 aspect-video bg-black/35"></div>
+          <img
+            src={imageUrl}
+            alt="Event Cover"
+            className="relative z-10 aspect-video w-full object-cover brightness-60 grayscale dark:brightness-40"
+          />
+        </>
+      ) : (
+        <div className="aspect-video w-full bg-muted-subtle" aria-hidden="true" />
+      )}
       <div className="absolute top-1 left-1 translate-1 z-40 text-destructive">
         {topLeft}
         {/* <Badge variant={"destructive"}>VOUCHER 25%</Badge> */}

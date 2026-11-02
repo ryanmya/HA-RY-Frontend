@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { NavLink, useNavigate } from "react-router";
+import { NavLink, useLocation, useNavigate } from "react-router";
 import { ApiError } from "@/lib/api";
 import { register, type RegisterPayload } from "@/lib/auth";
 import { TextField } from "@/components/text-field";
@@ -47,7 +47,12 @@ function getErrorMessage(err: unknown) {
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const [selectedRole, setSelectedRole] = useState<TypeRoles>("CUSTOMER");
+  const location = useLocation();
+  const createEventSignup =
+    (location.state as { createEventSignup?: boolean } | null)?.createEventSignup === true;
+  const [selectedRole, setSelectedRole] = useState<TypeRoles>(
+    createEventSignup ? "ORGANIZER" : "CUSTOMER",
+  );
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
@@ -116,6 +121,13 @@ export default function RegisterPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
+            {createEventSignup && (
+              <Badge variant="default" size="lg">
+                <span>
+                  Untuk membuat acara, silakan mendaftar sebagai penyelenggara.
+                </span>
+              </Badge>
+            )}
             {formError && (
                 <Badge variant="destructive" size="lg">
                   <span>{formError}</span>

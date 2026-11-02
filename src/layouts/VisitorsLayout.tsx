@@ -1,7 +1,7 @@
 import Logo from "@/components/logo";
 import Navbar from "@/components/navbar";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import UserMenu from "@/components/user-menu";
 import { useNavSlots } from "@/hooks/useNavSlots";
 import { cn } from "@/lib/utils";
@@ -71,7 +71,13 @@ export default function VisitorsLayout() {
             >
               Sign In
             </NavLink>
-            <Button variant={"default"}>Create Event</Button>
+            <NavLink
+              to="/register"
+              state={{ createEventSignup: true }}
+              className={buttonVariants({ variant: "default" })}
+            >
+              Create Event
+            </NavLink>
           </>
         )}
       </div>

@@ -1,5 +1,4 @@
 // Sidebar entries for the organizer area. Paths are relative to /organizer.
-// TODO: replace the hardcoded counts with data from the backend.
 export type OrganizerNavItem = {
   label: string;
   to: string;
@@ -9,7 +8,7 @@ export type OrganizerNavItem = {
 
 export const organizerNav: OrganizerNavItem[] = [
   { label: "Ringkasan", to: "/organizer" },
-  { label: "Acara", to: "/organizer/events", count: 26 },
+  { label: "Acara", to: "/organizer/events" },
   { label: "Draf Acara", to: "/organizer/drafts" },
   { label: "Transaksi", to: "/organizer/transactions", count: 7, countTone: "destructive" },
   { label: "Peserta", to: "/organizer/attendees" },
