@@ -17,6 +17,7 @@ import OrganizerReviewsPage from "./pages/organizer/OrganizerReviewsPage";
 import OrganizerTransactionsPage from "./pages/organizer/OrganizerTransactionsPage";
 import OrganizerVouchersPage from "./pages/organizer/OrganizerVouchersPage";
 import EventsDetailsPage from "./pages/events/EventsDetailsPage";
+import CustomerProfilePage from "./pages/customer/CustomerProfilePage";
 
 export const router = createBrowserRouter([
   {
@@ -34,7 +35,12 @@ export const router = createBrowserRouter([
         children: [
           { index: true, Component: HomePage },
           { path: "/components-page", Component: ComponentsPage },
-          { path: "/events-details/:id", Component: EventsDetailsPage }
+          { path: "/events-details/:id", Component: EventsDetailsPage },
+          {
+            path: "/profile",
+            element: <RequireRole role="CUSTOMER" />,
+            children: [{ index: true, Component: CustomerProfilePage }],
+          },
         ],
       },
       {

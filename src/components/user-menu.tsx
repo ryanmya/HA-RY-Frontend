@@ -1,6 +1,6 @@
 import { Popover } from "@base-ui/react/popover";
-import { LogOutIcon, UserIcon } from "lucide-react";
-import { useNavigate } from "react-router";
+import { LogOutIcon, PencilLine, UserIcon } from "lucide-react";
+import { NavLink, useNavigate } from "react-router";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { logout } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -8,6 +8,7 @@ import { useAuthStore } from "@/stores/auth";
 
 export default function UserMenu() {
   const user = useAuthStore((s) => s.user);
+  const isCustomer = user?.userType === "CUSTOMER";
   const navigate = useNavigate();
   const profilePicture = user?.profilePicture;
 
@@ -46,6 +47,18 @@ export default function UserMenu() {
               )}
             </div>
             <div className="my-1 h-px bg-border" />
+            {isCustomer && (
+              <NavLink
+                to="/profile"
+                className={cn(
+                  buttonVariants({ variant: "ghost" }),
+                  "w-full justify-start",
+                )}
+              >
+                <PencilLine />
+                Edit profil
+              </NavLink>
+            )}
             <Button
               variant="ghost"
               className="w-full justify-start text-destructive hover:text-destructive"

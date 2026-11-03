@@ -91,7 +91,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="w-screen h-screen flex flex-col">
+    <div className="flex w-full flex-1 flex-col">
       <Navbar
         left={<Logo />}
         right={
@@ -109,8 +109,8 @@ export default function RegisterPage() {
           </>
         }
       />
-      <div className="flex-1 flex items-center justify-center">
-        <Card className="w-1/3">
+      <div className="flex flex-1 items-center justify-center px-4 py-8">
+        <Card className="w-full max-w-2xl">
           <CardHeader>
             <CardTitle>Buat Akun</CardTitle>
             <CardDescription>
