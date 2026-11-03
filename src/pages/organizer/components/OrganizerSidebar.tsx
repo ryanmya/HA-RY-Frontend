@@ -36,7 +36,13 @@ export default function OrganizerSidebar() {
   return (
     <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col gap-6 border-r bg-card p-4">
       <div className="flex flex-col px-2">
-        <Logo />
+        <NavLink
+          to="/"
+          aria-label="HA-RY homepage"
+          className="w-fit rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+        >
+          <Logo />
+        </NavLink>
         <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
           Penyelenggara
         </span>

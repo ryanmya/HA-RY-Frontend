@@ -18,6 +18,7 @@ import { TextField } from "@/components/text-field";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { TypeRoles } from "@/types/users";
+import { Home } from "lucide-react";
 import React, { useState } from "react";
 
 const fieldTitles: Record<string, string> = {
@@ -93,7 +94,15 @@ export default function RegisterPage() {
   return (
     <div className="flex w-full flex-1 flex-col">
       <Navbar
-        left={<Logo />}
+        left={
+          <NavLink
+            to="/"
+            aria-label="HA-RY homepage"
+            className="rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+          >
+            <Logo />
+          </NavLink>
+        }
         right={
           <>
             Sudah punya akun?{" "}
@@ -258,6 +267,16 @@ export default function RegisterPage() {
                 )}
               </Button>
             </form>
+            <NavLink
+              to="/"
+              className={cn(
+                buttonVariants({ variant: "outline" }),
+                "w-full",
+              )}
+            >
+              <Home />
+              Kembali ke Halaman Utama
+            </NavLink>
           </CardContent>
         </Card>
       </div>
