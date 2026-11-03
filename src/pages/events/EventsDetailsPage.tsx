@@ -1,7 +1,13 @@
 import CustomerAccessDialog from "@/components/customer-access-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { getEventById } from "@/lib/events";
 import { formatCurrency } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
@@ -43,11 +49,16 @@ export default function EventsDetailsPage() {
 
     let active = true;
     getEventById(id)
-      .then((result) => {
-        if (active) setResult({ id, event: result });
+      .then((event) => {
+        if (active) setResult({ id, event });
       })
       .catch(() => {
-        if (active) setResult({ id, error: "Gagal memuat detail acara. Silakan coba lagi." });
+        if (active) {
+          setResult({
+            id,
+            error: "Gagal memuat detail acara. Silakan coba lagi.",
+          });
+        }
       });
 
     return () => {
@@ -57,22 +68,20 @@ export default function EventsDetailsPage() {
 
   if (!isCustomer) {
     return (
-      <>
-        <CustomerAccessDialog
-          open
-          onOpenChange={(open) => {
-            if (!open) navigate("/", { replace: true });
-          }}
-          isLoggedIn={isLoggedIn}
-        />
-      </>
+      <CustomerAccessDialog
+        open
+        onOpenChange={(open) => {
+          if (!open) navigate("/", { replace: true });
+        }}
+        isLoggedIn={isLoggedIn}
+      />
     );
   }
 
   const currentResult = id && result?.id === id ? result : null;
   const event = currentResult?.event;
   const error = currentResult?.error;
-  const loading = Boolean(id) && isCustomer && !currentResult;
+  const loading = Boolean(id) && !currentResult;
 
   if (loading) {
     return (
@@ -81,7 +90,9 @@ export default function EventsDetailsPage() {
           <ArrowLeft />
           Kembali
         </Button>
-        <p className="text-center text-muted-foreground">Memuat detail acara…</p>
+        <p className="text-center text-muted-foreground">
+          Memuat detail acara…
+        </p>
       </div>
     );
   }
@@ -93,12 +104,15 @@ export default function EventsDetailsPage() {
           <ArrowLeft />
           Kembali
         </Button>
-        <p className="text-destructive">{error ?? "Acara tidak ditemukan."}</p>
+        <p className="text-destructive">
+          {error ?? "Acara tidak ditemukan."}
+        </p>
       </div>
     );
   }
 
-  const ticketPrices = event.ticketTypes?.map((ticket) => Number(ticket.price)).filter(Number.isFinite) ?? [];
+  const ticketPrices =
+    event.ticketTypes?.map((ticket) => Number(ticket.price)).filter(Number.isFinite) ?? [];
   const minPrice = ticketPrices.length ? Math.min(...ticketPrices) : undefined;
   const maxPrice = ticketPrices.length ? Math.max(...ticketPrices) : undefined;
 
@@ -110,67 +124,80 @@ export default function EventsDetailsPage() {
       </Button>
       <div className="grid gap-8 md:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
         <div className="flex flex-col gap-6">
-        {event.eventPicture ? (
-          <img
-            src={event.eventPicture}
-            alt={`Poster ${event.name}`}
-            className="aspect-video w-full rounded-2xl object-cover"
-          />
-        ) : (
-          <div className="flex aspect-video items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-            Tidak ada gambar acara
+          {event.eventPicture ? (
+            <img
+              src={event.eventPicture}
+              alt={`Poster ${event.name}`}
+              className="aspect-video w-full rounded-2xl object-cover"
+            />
+          ) : (
+            <div className="flex aspect-video items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+              Tidak ada gambar acara
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <Badge>{event.category}</Badge>
+            {event.isFree && <Badge variant="success">Gratis</Badge>}
           </div>
-        )}
-        <div className="flex flex-wrap gap-2">
-          <Badge>{event.category}</Badge>
-          {event.isFree && <Badge variant="success">Gratis</Badge>}
-        </div>
-        <h1 className="text-3xl font-bold">{event.name}</h1>
-        <p className="text-muted-foreground">{event.description}</p>
-        <Card>
-          <CardHeader>
-            <CardTitle>Informasi acara</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <CardDescription>Lokasi: {event.location}</CardDescription>
-            <CardDescription>
-              Tanggal: {formatDate(event.startDate)}
-              {event.endDate && event.endDate !== event.startDate
-                ? ` – ${formatDate(event.endDate)}`
-                : ""}
-            </CardDescription>
-            <CardDescription>{event.availableSeats} kursi tersedia</CardDescription>
-          </CardContent>
-        </Card>
+          <h1 className="text-3xl font-bold">{event.name}</h1>
+          <p className="text-muted-foreground">{event.description}</p>
+          <Card>
+            <CardHeader>
+              <CardTitle>Informasi acara</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              <CardDescription>Lokasi: {event.location}</CardDescription>
+              <CardDescription>
+                Tanggal: {formatDate(event.startDate)}
+                {event.endDate && event.endDate !== event.startDate
+                  ? ` – ${formatDate(event.endDate)}`
+                  : ""}
+              </CardDescription>
+              <CardDescription>
+                {event.availableSeats} kursi tersedia
+              </CardDescription>
+            </CardContent>
+          </Card>
         </div>
 
-        <Card className="h-fit">
-          <CardHeader>
-            <CardTitle>Tiket</CardTitle>
-            <CardDescription>
-              {event.isFree
-                ? "FREE"
-                : minPrice !== undefined && maxPrice !== undefined
-                  ? minPrice === maxPrice
-                    ? formatCurrency(minPrice, "IDR")
-                    : `${formatCurrency(minPrice, "IDR")} - ${formatCurrency(maxPrice, "IDR")}`
-                  : "Harga tiket belum tersedia"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            {event.ticketTypes?.map((ticket) => (
-              <div key={ticket.id} className="flex justify-between gap-4 text-sm">
-                <span>{ticket.name}</span>
-                <span className="font-semibold">
-                  {event.isFree ? "FREE" : formatCurrency(Number(ticket.price), "IDR")}
-                </span>
-              </div>
-            ))}
-            <Button disabled title="Pembelian tiket belum tersedia.">
-              Pembelian tiket belum tersedia
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col gap-4">
+          <Card className="h-fit">
+            <CardHeader>
+              <CardTitle>Tiket</CardTitle>
+              <CardDescription>
+                {event.isFree
+                  ? "FREE"
+                  : minPrice !== undefined && maxPrice !== undefined
+                    ? minPrice === maxPrice
+                      ? formatCurrency(minPrice, "IDR")
+                      : `${formatCurrency(minPrice, "IDR")} - ${formatCurrency(maxPrice, "IDR")}`
+                    : "Harga tiket belum tersedia"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              {event.ticketTypes?.map((ticket) => (
+                <div
+                  key={ticket.id}
+                  className="flex justify-between gap-4 text-sm"
+                >
+                  <span>{ticket.name}</span>
+                  <span className="font-semibold">
+                    {event.isFree
+                      ? "FREE"
+                      : formatCurrency(Number(ticket.price), "IDR")}
+                  </span>
+                </div>
+              ))}
+              <Button disabled title="Pembelian tiket belum tersedia.">
+                Pembelian tiket belum tersedia
+              </Button>
+            </CardContent>
+          </Card>
+          <Button className="w-full" variant="outline" onClick={goBack}>
+            <ArrowLeft />
+            Kembali ke halaman sebelumnya
+          </Button>
+        </div>
       </div>
     </div>
   );
