@@ -1,4 +1,5 @@
 import CardImage from "@/components/card-image";
+import CustomerAccessDialog from "@/components/customer-access-dialog";
 import { TextField } from "@/components/text-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useInfiniteList } from "@/hooks/useInfiniteList";
 import { getEvents } from "@/lib/events";
 import { formatCurrency } from "@/lib/utils";
+import { useAuthStore } from "@/stores/auth";
 import { Icon } from "@iconify/react";
 import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
@@ -31,9 +33,13 @@ const formatDate = (iso: string) =>
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const isLoggedIn = useAuthStore((state) => Boolean(state.accessToken));
+  const userType = useAuthStore((state) => state.user?.userType);
+  const isCustomer = isLoggedIn && userType === "CUSTOMER";
   const listRef = useRef<HTMLDivElement>(null);
   const [draftFilters, setDraftFilters] = useState<EventFilters>(EMPTY_FILTERS);
   const [filters, setFilters] = useState<EventFilters>(EMPTY_FILTERS);
+  const [accessDialogOpen, setAccessDialogOpen] = useState(false);
   const { items: events, loading, error, hasMore, loadMore, sentinelRef } = useInfiniteList(
     (cursor) => getEvents({ limit: 4, cursor }),
   );
@@ -202,7 +208,13 @@ export default function HomePage() {
                     </Badge>
                   )
                 }
-                onClick={() => navigate(`/events-details/${event.id}`)}
+                onClick={() => {
+                  if (isCustomer) {
+                    navigate(`/events-details/${event.id}`);
+                  } else {
+                    setAccessDialogOpen(true);
+                  }
+                }}
               />
             ))}
           </div>
@@ -228,6 +240,11 @@ export default function HomePage() {
           </div>
         )}
       </section>
+      <CustomerAccessDialog
+        open={accessDialogOpen}
+        onOpenChange={setAccessDialogOpen}
+        isLoggedIn={isLoggedIn}
+      />
     </div>
   );
 }
