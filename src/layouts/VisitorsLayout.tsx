@@ -85,7 +85,7 @@ export default function VisitorsLayout() {
   });
 
   return (
-    <div className="pb-6">
+    <div>
       <Navbar {...slots} />
       <Outlet />
     </div>

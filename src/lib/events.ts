@@ -1,6 +1,6 @@
 import { api } from "@/lib/api";
 import type { EventInput, EventSummary, OrganizerEvent } from "@/types/event";
-import { toQuery, type PageParams, type Paginated } from "@/types/pagination";
+import { toQuery, type PageParams } from "@/types/pagination";
 //get
 export type EventFilters = {
   /** Free text; the backend matches it against every text field (name, location, category, description…). */
@@ -10,9 +10,33 @@ export type EventFilters = {
   to?: string;
 };
 
+type EventListResponse = {
+  data: EventSummary[] | {
+    items: EventSummary[];
+    nextCursor?: string | null;
+  };
+  pagination?: {
+    nextCursor?: string | null;
+  };
+};
+
 // Public list of active events, for the homepage.
-export function getEvents({ limit = 12, cursor, search, from, to }: PageParams & EventFilters = {}) {
-  return api.get<Paginated<EventSummary>>(`/events/all-event${toQuery({ limit, cursor, search, from, to })}`);
+export async function getEvents({ limit = 12, cursor, search, from, to }: PageParams & EventFilters = {}) {
+  const response = await api.getWithResponse<EventListResponse>(
+    `/events/all-event${toQuery({ limit, cursor, search, from, to })}`,
+  );
+
+  if (Array.isArray(response.data)) {
+    return {
+      items: response.data,
+      nextCursor: response.pagination?.nextCursor ?? null,
+    };
+  }
+
+  return {
+    items: response.data.items,
+    nextCursor: response.data.nextCursor ?? null,
+  };
 }
 
 // The logged-in organizer's events; the backend reads the organizer from the access token.

@@ -1,186 +1,233 @@
 import CardImage from "@/components/card-image";
-import { DateRangeField, type DateRange } from "@/components/date-range-field";
 import { TextField } from "@/components/text-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { useDebounce } from "@/hooks/useDebounce";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { useInfiniteList } from "@/hooks/useInfiniteList";
-import { toDateParam } from "@/lib/date";
 import { getEvents } from "@/lib/events";
-import { cn, formatCurrency } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { Icon } from "@iconify/react";
-import { useEffect, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 
-// Height of the sticky Navbar (h-16); the search bar pins right below it.
-const NAV_HEIGHT = 64;
-
-type TypeEventGroup = {
-  title: string;
-  count: number;
-  icon: string;
+type EventFilters = {
+  category: string;
+  availability: "all" | "free" | "paid";
+  location: string;
 };
+
+const EMPTY_FILTERS: EventFilters = {
+  category: "",
+  availability: "all",
+  location: "",
+};
+
+const filterSelectClass =
+  "h-12 w-full rounded-xl border border-border bg-field px-4 text-[15px] text-foreground outline-none focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-primary/20";
 
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
 
 export default function HomePage() {
-
-  const nav = useNavigate()
-
-  const eventGroup: TypeEventGroup[] = [
-    { title: "Musik", count: 1204, icon: "lucide:music" },
-    { title: "Konferensi", count: 610, icon: "lucide:presentation" },
-    { title: "Seni", count: 388, icon: "lucide:palette" },
-    { title: "Olahraga", count: 271, icon: "lucide:trophy" },
-    { title: "Workshop", count: 194, icon: "lucide:wrench" },
-    { title: "Gratis", count: 412, icon: "lucide:ticket" },
-  ];
-
-  // "Cari" matches any text field on the backend; "Tanggal" filters by a date range.
-  const [search, setSearch] = useState("");
-  const [range, setRange] = useState<DateRange>();
-  const debouncedSearch = useDebounce(search.trim());
-  // With only a start picked, filter by that single day.
-  const from = toDateParam(range?.from);
-  const to = toDateParam(range?.to ?? range?.from);
-
-  // Loads 12 events at a time as the user scrolls; restarts from page 1 when the filters change.
-  const { items: events, loading, error, sentinelRef } = useInfiniteList(
-    (cursor) => getEvents({ cursor, search: debouncedSearch, from, to }),
-    [debouncedSearch, from, to],
+  const navigate = useNavigate();
+  const listRef = useRef<HTMLDivElement>(null);
+  const [draftFilters, setDraftFilters] = useState<EventFilters>(EMPTY_FILTERS);
+  const [filters, setFilters] = useState<EventFilters>(EMPTY_FILTERS);
+  const { items: events, loading, error, hasMore, loadMore, sentinelRef } = useInfiniteList(
+    (cursor) => getEvents({ limit: 4, cursor }),
   );
 
-  // The search bar's spot in the hero. Once it scrolls under the navbar, the bar is pinned
-  // with `fixed` and this spot keeps its height so the page doesn't jump.
-  const searchSlotRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
-  const [stuck, setStuck] = useState(false);
-  const [searchHeight, setSearchHeight] = useState(0);
+  const categories = useMemo(
+    () => [...new Set(events.map((event) => event.category).filter(Boolean))].sort(),
+    [events],
+  );
 
-  useEffect(() => {
-    const slot = searchSlotRef.current;
-    if (!slot) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setSearchHeight(entry.boundingClientRect.height);
-        setStuck(entry.boundingClientRect.top < NAV_HEIGHT);
-      },
-      { rootMargin: `-${NAV_HEIGHT}px 0px 0px 0px`, threshold: [0, 1] },
-    );
-    observer.observe(slot);
-    return () => observer.disconnect();
-  }, []);
+  const filteredEvents = useMemo(() => {
+    const category = filters.category.trim().toLocaleLowerCase("id-ID");
+    const location = filters.location.trim().toLocaleLowerCase("id-ID");
 
-  // Scrolls to the list; the search bar pins itself on the way down.
-  const scrollToList = () => listRef.current?.scrollIntoView({ behavior: "smooth" });
-  console.log(events)
+    return events.filter((event) => {
+      return (
+        (!category || event.category.toLocaleLowerCase("id-ID").includes(category)) &&
+        (filters.availability === "all" ||
+          (filters.availability === "free" ? event.isFree : !event.isFree)) &&
+        (!location || event.location.toLocaleLowerCase("id-ID").includes(location))
+      );
+    });
+  }, [events, filters]);
+
+  const updateDraft = <K extends keyof EventFilters>(key: K, value: EventFilters[K]) =>
+    setDraftFilters((current) => ({ ...current, [key]: value }));
+
+  const resetFilters = () => {
+    setDraftFilters(EMPTY_FILTERS);
+    setFilters(EMPTY_FILTERS);
+  };
+
   return (
-    <div className="flex border-none p-0 flex-col gap-8">
-      <div className="h-fit relative isolate overflow-hidden pt-[38px] flex flex-col px-20 gap-7 z-40">
-        <div className="absolute inset-0 -z-10 bg-primary h-7/8"></div>
-        <div className="flex flex-col gap-2">
-          <div className="text-[44px] font-bold text-white">
-            Cari acara, amankan kursinya.
+    <div className="flex flex-col gap-10 pb-12">
+      <section className="bg-primary px-6 py-12 text-primary-foreground md:px-12 md:py-16">
+        <div className="mx-auto flex max-w-7xl flex-col gap-8">
+          <div className="max-w-2xl space-y-3">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white/70">
+              Temukan pengalaman berikutnya
+            </p>
+            <h1 className="text-3xl font-bold md:text-5xl">
+              Cari acara, amankan kursinya.
+            </h1>
+            <p className="text-white/75">
+              Jelajahi acara berdasarkan kategori, harga, dan lokasi.
+            </p>
           </div>
-          <div className="text-white/70">
-            {events.length || 0} acara aktif di 61 kota - konser, konferensi, lari, workshop.
-          </div>
-        </div>
-        <div ref={searchSlotRef} style={stuck ? { height: searchHeight } : undefined}>
-          <div
-            className={cn(
-              stuck &&
-                "fixed inset-x-0 top-16 z-20 bg-primary px-20 py-3 shadow-md animate-in fade-in slide-in-from-top-2 duration-200",
-            )}
-          >
-            <Card className="p-3">
-              <CardContent className="p-0">
-                <form
-                  className="grid grid-cols-[8fr_4fr_1fr] items-end gap-1"
-                  // Results already update as you type; the button just jumps to them.
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    scrollToList();
-                  }}
-                >
-                  <TextField
-                    label="Cari"
-                    placeholder="Nama acara, kota, kategori…"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-                  <DateRangeField label="Tanggal" value={range} onChange={setRange} />
-                  <Button type="submit">Cari Acara</Button>
-                </form>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-        <div className="grid grid-cols-6 gap-3 hidden">
-          {eventGroup.map((group) => (
-            <Card key={group.title}>
-              <CardContent className="flex flex-col items-center gap-1">
-                <div className="mb-3 flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Icon icon={group.icon} className="size-4" />
+
+          <Card className="border-0 shadow-xl">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Icon icon="lucide:sliders-horizontal" className="size-5 text-primary" />
+                Temukan acara
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form
+                className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  setFilters(draftFilters);
+                  listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+              >
+                <div className="flex flex-col gap-2">
+                  <Label
+                    htmlFor="event-category"
+                    className="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+                  >
+                    Kategori
+                  </Label>
+                  <select
+                    id="event-category"
+                    className={filterSelectClass}
+                    value={draftFilters.category}
+                    onChange={(event) => updateDraft("category", event.target.value)}
+                  >
+                    <option value="">Semua kategori</option>
+                    {categories.map((category) => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
                 </div>
-                <div className="font-semibold">{group.title}</div>
-                <div className="text-sm text-muted-foreground">
-                  {group.count.toLocaleString("id-ID")}
+                <div className="flex flex-col gap-2">
+                  <Label
+                    htmlFor="event-availability"
+                    className="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+                  >
+                    Harga tiket
+                  </Label>
+                  <select
+                    id="event-availability"
+                    className={filterSelectClass}
+                    value={draftFilters.availability}
+                    onChange={(event) =>
+                      updateDraft("availability", event.target.value as EventFilters["availability"])
+                    }
+                  >
+                    <option value="all">Semua acara</option>
+                    <option value="free">Gratis</option>
+                    <option value="paid">Berbayar</option>
+                  </select>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+                <TextField
+                  label="Lokasi"
+                  placeholder="Kota atau tempat acara"
+                  value={draftFilters.location}
+                  onChange={(event) => updateDraft("location", event.target.value)}
+                />
+                <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-3 lg:justify-end">
+                  <Button type="button" variant="outline" onClick={resetFilters}>
+                    Reset
+                  </Button>
+                  <Button type="submit" appendIcon={<Icon icon="lucide:search" />}>
+                    Cari acara
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         </div>
-      </div>
-      <div
+      </section>
+
+      <section
         ref={listRef}
-        // Leaves room for the navbar and the pinned search bar (plus its py-3) when scrolled to.
-        style={{ scrollMarginTop: NAV_HEIGHT + searchHeight + 24 + 16 }}
-        // Fades out (keeping its space so the grid doesn't jump) while the search bar is pinned.
-        className={cn(
-          "px-20 flex justify-between transition-opacity duration-200",
-          stuck && "pointer-events-none opacity-0",
-        )}
+        className="mx-auto flex w-full max-w-7xl scroll-mt-24 flex-col gap-5 px-6 md:px-12"
       >
-        <div className="flex flex-col gap-4">
-          <div className="type-section">Acara Terdekat</div>
-          <div className="flex items-center">
-            {new Date().toLocaleDateString("id-ID", {month: "long"})} {new Date().getFullYear()} <Icon icon={"mdi:dot"} /> Jakarta dan sekitarnya
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-sm text-muted-foreground">Pilihan untuk Anda</p>
+            <h2 className="type-section">Acara Terdekat</h2>
           </div>
+          <p className="text-sm text-muted-foreground">
+            {filteredEvents.length} acara ditampilkan
+          </p>
         </div>
 
-        <Button variant={"link"} appendIcon={<Icon icon="mdi:arrow-right" />} onClick={scrollToList}>
-          Lihat semua {events.length || 0}
-        </Button>
-      </div>
-      <div className="grid grid-cols-4 gap-2 px-20 z-10">
-        {events.map((e) => (
-          <CardImage
-            key={e.id}
-            imageUrl={e.eventPicture ?? undefined}
-            title={e.name}
-            place={e.location}
-            startDate={formatDate(e.startDate)}
-            endDate={formatDate(e.endDate)}
-            price={Number(e.ticketTypes?.[0]?.price ?? 0)}
-            seats={e.availableSeats}
-            tags={<Badge variant={"default"}>{e.category}</Badge>}
-            topLeft={
-              e.vouchers?.[0]?.discountAmount && (
-                <Badge variant={"destructive"}>
-                  Voucher {formatCurrency(Number(e.vouchers?.[0].discountAmount), "IDR")}
-                </Badge>
-              )
-            }
-            onClick={() => nav("/events-details/" + e.id)}
-          />
-        ))}
-      </div>
-      <div ref={sentinelRef} />
-      {loading && <div className="px-20 text-muted-foreground">Memuat acara…</div>}
-      {error && <div className="px-20 text-destructive">{error}</div>}
+        {filteredEvents.length > 0 ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {filteredEvents.map((event) => (
+              <CardImage
+                key={event.id}
+                imageUrl={event.eventPicture ?? undefined}
+                title={event.name}
+                place={event.location}
+                startDate={formatDate(event.startDate)}
+                endDate={formatDate(event.endDate)}
+                price={event.isFree ? 0 : Number(event.lowestPrice ?? event.ticketTypes?.[0]?.price ?? 0)}
+                priceLabel={
+                  event.isFree
+                    ? "FREE"
+                    : event.minTicketPrice != null && event.maxTicketPrice != null
+                      ? `${formatCurrency(Number(event.minTicketPrice), "IDR")} - ${formatCurrency(Number(event.maxTicketPrice), "IDR")}`
+                      : undefined
+                }
+                seats={event.availableSeats}
+                tags={
+                  <div className="flex flex-wrap gap-2">
+                    <Badge>{event.category}</Badge>
+                    {event.isFree && <Badge variant="success">Gratis</Badge>}
+                  </div>
+                }
+                topLeft={
+                  event.bestVoucher?.discountAmount && (
+                    <Badge variant="destructive">
+                      Voucher {formatCurrency(Number(event.bestVoucher.discountAmount), "IDR")}
+                    </Badge>
+                  )
+                }
+                onClick={() => navigate(`/events-details/${event.id}`)}
+              />
+            ))}
+          </div>
+        ) : !loading && (
+          <Card>
+            <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
+              <Icon icon="lucide:calendar-search" className="size-8 text-muted-foreground" />
+              <p className="font-semibold">Acara tidak ditemukan</p>
+              <p className="text-sm text-muted-foreground">
+                Coba ubah kategori, harga, atau lokasi pencarian.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+        {events.length === 0 && <div ref={sentinelRef} />}
+        {loading && <p className="py-2 text-center text-muted-foreground">Memuat acara…</p>}
+        {error && <p className="py-2 text-center text-destructive">{error}</p>}
+        {!loading && hasMore && (
+          <div className="flex justify-center">
+            <Button onClick={loadMore}>
+              {error ? "Coba lagi" : "Lebih banyak acara"}
+            </Button>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

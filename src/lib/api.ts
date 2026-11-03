@@ -114,6 +114,8 @@ async function request<T>(
 export const api = {
   get: <T>(path: string, init?: RequestInit) =>
     request<T>(path, { ...init, method: "GET" }),
+  getWithResponse: <T>(path: string, init?: RequestInit) =>
+    request<T>(path, { ...init, method: "GET" }, false),
   post: <T>(path: string, body?: unknown, init?: RequestInit) =>
     request<T>(path, {
       ...init,
