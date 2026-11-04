@@ -1,5 +1,6 @@
 import Logo from "@/components/logo";
 import { getOrganizerEventCount } from "@/lib/events";
+import { getOrganizerReport } from "@/lib/organizer-reports";
 import { getOrganizerPendingTransactionCount } from "@/lib/organizer-transactions";
 import { cn } from "@/lib/utils";
 import { useEventEditorStore } from "@/stores/event-editor";
@@ -10,6 +11,12 @@ import { organizerNav } from "./organizer-nav";
 export default function OrganizerSidebar() {
   const eventsVersion = useEventEditorStore((state) => state.eventsVersion);
   const transactionsVersion = useEventEditorStore((state) => state.transactionsVersion);
+  const today = new Date();
+  const todayDateTime = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, "0"),
+    String(today.getDate()).padStart(2, "0"),
+  ].join("-");
   const [eventCountResult, setEventCountResult] = useState<{
     version: number;
     count?: number;
@@ -18,6 +25,10 @@ export default function OrganizerSidebar() {
   const [pendingCountResult, setPendingCountResult] = useState<{
     version: number;
     count?: number;
+    error?: boolean;
+  } | null>(null);
+  const [revenueResult, setRevenueResult] = useState<{
+    amount?: number;
     error?: boolean;
   } | null>(null);
 
@@ -50,6 +61,21 @@ export default function OrganizerSidebar() {
       active = false;
     };
   }, [transactionsVersion]);
+
+  useEffect(() => {
+    let active = true;
+    getOrganizerReport()
+      .then((report) => {
+        if (active) setRevenueResult({ amount: report.overview.revenue });
+      })
+      .catch(() => {
+        if (active) setRevenueResult({ error: true });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const eventCountResultIsCurrent = eventCountResult?.version === eventsVersion;
   const eventCount = eventCountResultIsCurrent ? eventCountResult.count : undefined;
@@ -164,13 +190,34 @@ export default function OrganizerSidebar() {
         ))}
       </nav>
 
-      {/* TODO: load the next payout from the backend. */}
       <div className="flex flex-col gap-1 rounded-xl bg-primary-subtle/50 p-4">
         <span className="text-xs font-semibold tracking-widest text-primary uppercase">
-          Pencairan berikutnya
+          Total dana masuk
         </span>
-        <span className="text-lg font-extrabold">IDR 84,2 jt</span>
-        <span className="text-xs text-muted-foreground">20 Sep 2026</span>
+        <span
+          className="text-lg font-extrabold"
+          title={revenueResult?.error ? "Gagal memuat total dana masuk" : undefined}
+        >
+          {revenueResult?.error
+            ? "Gagal dimuat"
+            : revenueResult?.amount === undefined
+              ? "Memuat…"
+              : new Intl.NumberFormat("id-ID", {
+                  style: "currency",
+                  currency: "IDR",
+                  maximumFractionDigits: 0,
+                }).format(revenueResult.amount)}
+        </span>
+        <time
+          dateTime={todayDateTime}
+          className="text-xs text-muted-foreground"
+        >
+          Per tanggal {new Intl.DateTimeFormat("id-ID", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          }).format(today)}
+        </time>
       </div>
     </aside>
   );
