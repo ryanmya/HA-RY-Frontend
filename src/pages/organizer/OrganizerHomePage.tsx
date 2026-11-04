@@ -363,7 +363,7 @@ export default function OrganizerHomePage() {
                         {formatDate(event.startDate)}
                       </p>
                     </div>
-                    <div className="grid grid-cols-3 gap-4 text-left sm:text-right">
+                    <div className="grid w-full grid-cols-3 gap-4 text-left sm:w-[min(100%,24rem)] sm:text-right">
                       <div>
                         <p className="text-xs text-muted-foreground">Transaksi</p>
                         <p className="mt-1 font-semibold">{numberFormatter.format(event.transactionCount)}</p>

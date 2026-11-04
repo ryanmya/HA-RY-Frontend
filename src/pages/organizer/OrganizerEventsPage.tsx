@@ -5,7 +5,7 @@ import { useInfiniteList } from "@/hooks/useInfiniteList";
 import { getEventsByOrganizer } from "@/lib/events";
 import { formatCurrency } from "@/lib/utils";
 import { useEventEditorStore } from "@/stores/event-editor";
-import { ChevronDown, LoaderCircle } from "lucide-react";
+import { ChevronDown, LoaderCircle, Trophy } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 
@@ -48,9 +48,13 @@ export default function OrganizerEventsPage() {
   );
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-primary">
+            <Trophy className="size-4" />
+            PUSAT ACARA
+          </div>
           <h1 className="text-2xl font-bold">Acara</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Kelola acara yang telah Anda terbitkan.
