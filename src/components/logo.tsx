@@ -15,7 +15,7 @@ const fontSizes = {
   "2xl": "text-2xl"
 }
 
-const LETTERS = "HARY".split("");
+const LETTERS = "HA&RY".split("");
 
 type LogoProps = React.ComponentProps<"span"> & {
   fontSize?: keyof typeof fontSizes;

@@ -23,7 +23,7 @@ export default function RootLayout() {
           }`}
         >
           <div className="mx-auto max-w-7xl text-center text-sm font-medium">
-            &copy; 2026 HA-RY Pass
+            &copy; 2026 HA&amp;RY Pass
           </div>
         </footer>
       )}
