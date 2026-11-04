@@ -7,6 +7,7 @@ export type AuthUser = {
   name: string
   email: string
   userType: TypeRoles
+  role?: "ADMIN" | "SUPER_ADMIN"
   profilePicture?: string | null
 }
 

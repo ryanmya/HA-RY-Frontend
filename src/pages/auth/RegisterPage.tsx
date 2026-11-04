@@ -11,13 +11,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { NavLink, useNavigate } from "react-router";
+import { NavLink, useLocation, useNavigate } from "react-router";
 import { ApiError } from "@/lib/api";
 import { register, type RegisterPayload } from "@/lib/auth";
 import { TextField } from "@/components/text-field";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { TypeRoles } from "@/types/users";
+import { Home } from "lucide-react";
 import React, { useState } from "react";
 
 const fieldTitles: Record<string, string> = {
@@ -47,7 +48,12 @@ function getErrorMessage(err: unknown) {
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const [selectedRole, setSelectedRole] = useState<TypeRoles>("CUSTOMER");
+  const location = useLocation();
+  const createEventSignup =
+    (location.state as { createEventSignup?: boolean } | null)?.createEventSignup === true;
+  const [selectedRole, setSelectedRole] = useState<TypeRoles>(
+    createEventSignup ? "ORGANIZER" : "CUSTOMER",
+  );
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
@@ -86,9 +92,17 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="w-screen h-screen flex flex-col">
+    <div className="flex w-full flex-1 flex-col">
       <Navbar
-        left={<Logo />}
+        left={
+          <NavLink
+            to="/"
+            aria-label="HA-RY homepage"
+            className="rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+          >
+            <Logo />
+          </NavLink>
+        }
         right={
           <>
             Sudah punya akun?{" "}
@@ -104,8 +118,8 @@ export default function RegisterPage() {
           </>
         }
       />
-      <div className="flex-1 flex items-center justify-center">
-        <Card className="w-1/3">
+      <div className="flex flex-1 items-center justify-center px-4 py-8">
+        <Card className="w-full max-w-2xl">
           <CardHeader>
             <CardTitle>Buat Akun</CardTitle>
             <CardDescription>
@@ -116,6 +130,13 @@ export default function RegisterPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
+            {createEventSignup && (
+              <Badge variant="default" size="lg">
+                <span>
+                  Untuk membuat acara, silakan mendaftar sebagai penyelenggara.
+                </span>
+              </Badge>
+            )}
             {formError && (
                 <Badge variant="destructive" size="lg">
                   <span>{formError}</span>
@@ -246,6 +267,16 @@ export default function RegisterPage() {
                 )}
               </Button>
             </form>
+            <NavLink
+              to="/"
+              className={cn(
+                buttonVariants({ variant: "outline" }),
+                "w-full",
+              )}
+            >
+              <Home />
+              Kembali ke Halaman Utama
+            </NavLink>
           </CardContent>
         </Card>
       </div>

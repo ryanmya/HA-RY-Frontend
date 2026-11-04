@@ -4,24 +4,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ApiError } from "@/lib/api";
 import { getEventById, updateEvent } from "@/lib/events";
-import type { OrganizerEvent } from "@/types/event";
+import type { OrganizerEvent, TicketTypeInput } from "@/types/event";
+import { PlusIcon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NavLink, useParams } from "react-router";
-import { ImagePicker, Section, Segmented, VoucherPanel } from "./components/event-form";
+import { ImagePicker, Section, Segmented } from "./components/event-form";
 
-// The backend sends full ISO date-times; date inputs need YYYY-MM-DD.
 const toDateInput = (iso: string) => iso.slice(0, 10);
 
-// Edits a published event. Only seats (increase only) and dates can change;
-// everything else is shown read-only so existing ticket sales stay valid.
 export default function OrganizerEventsEditorPage() {
   const { id } = useParams<{ id: string }>();
   const [event, setEvent] = useState<OrganizerEvent | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-
-  const [seats, setSeats] = useState(0);
+  const [description, setDescription] = useState("");
+  const [location, setLocation] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [seats, setSeats] = useState(0);
+  const [isFree, setIsFree] = useState(false);
+  const [ticketTypes, setTicketTypes] = useState<TicketTypeInput[]>([]);
   const [image, setImage] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,178 +31,259 @@ export default function OrganizerEventsEditorPage() {
   useEffect(() => {
     if (!id) return;
     getEventById(id)
-      .then((e) => {
-        setEvent(e);
-        setSeats(e.availableSeats);
-        setStartDate(toDateInput(e.startDate));
-        setEndDate(toDateInput(e.endDate));
+      .then((loadedEvent) => {
+        setEvent(loadedEvent);
+        setDescription(loadedEvent.description);
+        setLocation(loadedEvent.location);
+        setStartDate(toDateInput(loadedEvent.startDate));
+        setEndDate(toDateInput(loadedEvent.endDate));
+        setSeats(loadedEvent.availableSeats);
+        setIsFree(loadedEvent.isFree);
+        setTicketTypes(
+          (loadedEvent.ticketTypes ?? []).map(({ name, price }) => ({
+            name,
+            price: Number(price),
+          })),
+        );
       })
       .catch(() => setLoadError("Gagal memuat acara."));
   }, [id]);
-  
-  if (loadError) return <div className="p-6 text-destructive">{loadError}</div>;
-  if (!event)
-    return <div className="p-6 text-muted-foreground">Memuat acara…</div>;
 
-  const minSeats = event.availableSeats;
+  if (loadError) return <div className="p-6 text-destructive">{loadError}</div>;
+  if (!event) return <div className="p-6 text-muted-foreground">Memuat acara…</div>;
+
+  const currentTicketTypes = (event.ticketTypes ?? []).map(({ name, price }) => ({
+    name,
+    price: Number(price),
+  }));
   const dirty =
     image !== null ||
-    seats !== event.availableSeats ||
+    description !== event.description ||
+    location !== event.location ||
     startDate !== toDateInput(event.startDate) ||
-    endDate !== toDateInput(event.endDate);
+    endDate !== toDateInput(event.endDate) ||
+    seats !== event.availableSeats ||
+    isFree !== event.isFree ||
+    JSON.stringify(ticketTypes) !== JSON.stringify(currentTicketTypes);
   const invalid =
-    seats < minSeats || !startDate || !endDate || endDate < startDate;
+    !startDate ||
+    !endDate ||
+    endDate < startDate ||
+    !Number.isInteger(seats) ||
+    seats < 1 ||
+    (!isFree &&
+      (ticketTypes.length === 0 ||
+        ticketTypes.some((ticket) => !ticket.name.trim() || !Number.isFinite(ticket.price) || ticket.price < 0)));
 
   const handleSave = async () => {
     setError(null);
     setSaved(false);
     setSaving(true);
     try {
-      // The backend validates the whole event, so send the unchanged fields back as they are.
       const updated = await updateEvent({
         id: event.id,
         name: event.name,
-        description: event.description,
+        description,
         category: event.category,
-        location: event.location,
-        isFree: event.isFree,
-        ticketTypes: (event.ticketTypes ?? []).map((t) => ({
-          name: t.name,
-          price: Number(t.price),
-        })),
+        location,
+        isFree,
+        ticketTypes: isFree
+          ? []
+          : ticketTypes.map((ticket) => ({ name: ticket.name.trim(), price: ticket.price })),
         availableSeats: seats,
         startDate,
         endDate,
         eventPicture: image ?? undefined,
       });
-      setEvent({ ...event, ...updated });
+
+      const updatedEvent: OrganizerEvent = {
+        ...event,
+        ...updated,
+        description,
+        location,
+        startDate,
+        endDate,
+        availableSeats: seats,
+        isFree,
+        ticketTypes:
+          updated.ticketTypes ??
+          (isFree
+            ? []
+            : ticketTypes.map((ticket, index) => ({
+                id: event.ticketTypes?.[index]?.id ?? `local-ticket-${index}`,
+                ...ticket,
+              }))),
+      };
+      setEvent(updatedEvent);
+      setDescription(updatedEvent.description);
+      setLocation(updatedEvent.location);
+      setStartDate(toDateInput(updatedEvent.startDate));
+      setEndDate(toDateInput(updatedEvent.endDate));
+      setSeats(updatedEvent.availableSeats);
+      setIsFree(updatedEvent.isFree);
+      setTicketTypes(
+        (updatedEvent.ticketTypes ?? []).map(({ name, price }) => ({
+          name,
+          price: Number(price),
+        })),
+      );
       setImage(null);
       setSaved(true);
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : "Terjadi kesalahan. Coba lagi.",
-      );
+      setError(err instanceof ApiError ? err.message : "Terjadi kesalahan. Coba lagi.");
     } finally {
       setSaving(false);
     }
   };
 
+  const updateTicket = (index: number, patch: Partial<TicketTypeInput>) => {
+    setTicketTypes((current) =>
+      current.map((ticket, ticketIndex) =>
+        ticketIndex === index ? { ...ticket, ...patch } : ticket,
+      ),
+    );
+  };
+
   return (
-    <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 p-6 lg:grid-cols-3">
-      <div className="flex flex-col gap-6 lg:col-span-2">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex flex-col">
-            <NavLink
-              to="/organizer/events"
-              className="text-sm text-muted-foreground hover:text-foreground"
-            >
-              ← Kembali ke Acara
-            </NavLink>
-            <h1 className="text-2xl font-bold">{event.name}</h1>
-          </div>
-          <Button onClick={handleSave} disabled={!dirty || invalid || saving}>
-            {saving ? "Menyimpan…" : "Simpan perubahan"}
-          </Button>
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-6">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col">
+          <NavLink
+            to="/organizer/events"
+            className="text-sm text-muted-foreground hover:text-foreground"
+          >
+            ← Kembali ke Acara
+          </NavLink>
+          <h1 className="text-2xl font-bold">{event.name}</h1>
         </div>
+        <Button onClick={handleSave} disabled={!dirty || invalid || saving}>
+          {saving ? "Menyimpan…" : "Simpan perubahan"}
+        </Button>
+      </div>
 
-        {error && (
-          <Badge variant="destructive" size="lg">
-            <span>{error}</span>
-          </Badge>
-        )}
-        {saved && !dirty && (
-          <Badge variant="success" size="lg">
-            <span>Perubahan tersimpan.</span>
-          </Badge>
-        )}
-
-        <ImagePicker file={image} currentUrl={event.eventPicture} onChange={setImage} />
-
-        <Section title="Informasi dasar">
-          <TextField label="Nama acara" value={event.name} disabled />
-          <div className="grid grid-cols-2 gap-4">
-            <TextField label="Kategori" value={event.category} disabled />
-            <TextField label="Lokasi" value={event.location} disabled />
-            <TextField
-              label="Mulai"
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-            />
-            <TextField
-              label="Selesai"
-              type="date"
-              value={endDate}
-              min={startDate || undefined}
-              aria-invalid={endDate < startDate}
-              onChange={(e) => setEndDate(e.target.value)}
-            />
-          </div>
-          <TextField
-            label="Jumlah kursi"
-            topRight={
-              <span className="text-xs text-muted-foreground">
-                Hanya bisa ditambah (min. {minSeats})
-              </span>
-            }
-            type="number"
-            min={minSeats}
-            value={seats || ""}
-            aria-invalid={seats < minSeats}
-            onChange={(e) => setSeats(Number(e.target.value))}
-          />
-          <TextAreaField label="Deskripsi" value={event.description} disabled />
-        </Section>
-
-        <Section
-          title="Jenis tiket"
-          action={
-            <Segmented
-              disabled
-              value={event.isFree ? "free" : "paid"}
-              options={[
-                { value: "paid", label: "Berbayar" },
-                { value: "free", label: "Gratis" },
-              ]}
-              onChange={() => {}}
-            />
-          }
+      {error && (
+        <Badge variant="destructive" size="lg">
+          <span>{error}</span>
+        </Badge>
+      )}
+      {saved && !dirty && (
+        <Badge
+          variant="success"
+          size="lg"
+          className="bg-green-500/20 text-green-800"
         >
-          {event.isFree ? (
-            <p className="text-sm text-muted-foreground">
-              Acara gratis tidak memerlukan jenis tiket.
-            </p>
-          ) : !event.ticketTypes?.length ? (
-            <p className="text-sm text-muted-foreground">
-              Jenis tiket tidak tersedia.
-            </p>
-          ) : (
+          <span>Perubahan tersimpan.</span>
+        </Badge>
+      )}
+
+      <Section title="Informasi dasar">
+        <ImagePicker file={image} currentUrl={event.eventPicture} onChange={setImage} />
+        <TextField label="Nama acara" value={event.name} disabled />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <TextField label="Kategori" value={event.category} disabled />
+          <TextField
+            label="Lokasi"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+          />
+          <TextField
+            label="Mulai"
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+          <TextField
+            label="Selesai"
+            type="date"
+            value={endDate}
+            min={startDate || undefined}
+            aria-invalid={endDate < startDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
+        </div>
+        <TextField
+          label="Jumlah kursi"
+          type="number"
+          min={1}
+          value={seats || ""}
+          aria-invalid={seats < 1}
+          onChange={(e) => setSeats(Number(e.target.value))}
+        />
+        <TextAreaField
+          label="Deskripsi"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+      </Section>
+
+      <Section
+        title="Jenis tiket"
+        action={
+          <Segmented
+            value={isFree ? "free" : "paid"}
+            options={[
+              { value: "paid", label: "Berbayar" },
+              { value: "free", label: "Gratis" },
+            ]}
+            onChange={(value) => setIsFree(value === "free")}
+          />
+        }
+      >
+        {isFree ? (
+          <p className="text-sm text-muted-foreground">
+            Acara gratis tidak memerlukan jenis tiket.
+          </p>
+        ) : (
+          <>
             <div className="overflow-hidden rounded-xl ring-1 ring-foreground/10">
-              <div className="grid grid-cols-2 gap-4 bg-muted-subtle/40 px-4 py-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-                <span>Nama</span>
+              <div className="grid grid-cols-[1fr_1fr_auto] gap-4 bg-muted-subtle/40 px-4 py-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                <span>Nama tiket</span>
                 <span className="text-right">Harga (IDR)</span>
+                <span className="w-8" />
               </div>
-              {event.ticketTypes.map((t) => (
+              {ticketTypes.map((ticket, index) => (
                 <div
-                  key={t.id}
-                  className="grid grid-cols-2 items-center gap-4 border-t px-4 py-3"
+                  key={index}
+                  className="grid grid-cols-[1fr_1fr_auto] items-center gap-4 border-t px-4 py-3"
                 >
-                  <Input value={t.name} disabled />
                   <Input
-                    value={Number(t.price).toLocaleString("id-ID")}
-                    className="text-right"
-                    disabled
+                    value={ticket.name}
+                    placeholder="Presale"
+                    aria-label={`Nama tiket ${index + 1}`}
+                    onChange={(e) => updateTicket(index, { name: e.target.value })}
                   />
+                  <Input
+                    type="number"
+                    min={0}
+                    className="text-right"
+                    value={ticket.price}
+                    aria-label={`Harga tiket ${index + 1}`}
+                    onChange={(e) => updateTicket(index, { price: Number(e.target.value) })}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Hapus jenis tiket"
+                    onClick={() =>
+                      setTicketTypes((current) => current.filter((_, ticketIndex) => ticketIndex !== index))
+                    }
+                  >
+                    <XIcon />
+                  </Button>
                 </div>
               ))}
             </div>
-          )}
-        </Section>
-      </div>
-
-      <div className="flex flex-col gap-6">
-        <VoucherPanel eventId={event.id} initialVouchers={event.vouchers} />
-      </div>
+            <Button
+              variant="outline"
+              className="self-start text-primary"
+              onClick={() => setTicketTypes((current) => [...current, { name: "", price: 0 }])}
+            >
+              <PlusIcon />
+              Tambah jenis tiket
+            </Button>
+          </>
+        )}
+      </Section>
     </div>
   );
 }

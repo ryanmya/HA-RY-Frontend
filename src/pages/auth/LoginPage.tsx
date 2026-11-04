@@ -71,9 +71,15 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="grid grid-cols-12 h-screen">
-      <div className="col-span-4 bg-primary py-9 px-10 flex flex-col justify-between">
-        <Logo color="white" />
+    <div className="grid flex-1 grid-cols-1 md:grid-cols-12">
+      <div className="hidden bg-primary px-10 py-9 md:col-span-4 md:flex md:flex-col md:justify-between">
+        <NavLink
+          to="/"
+          aria-label="HA-RY homepage"
+          className="w-fit rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+        >
+          <Logo color="white" />
+        </NavLink>
         <div className="flex flex-col gap-6">
           <span className="type-page-title text-white">
             Satu akun untuk <br /> menonton atau <br /> menyelenggarakan.
@@ -109,8 +115,8 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-      <div className="col-span-8 bg-background flex items-center justify-center">
-        <Card className="w-1/2 p-10 gap-[22px]">
+      <div className="flex min-w-0 items-center justify-center bg-background px-4 py-8 md:col-span-8 md:px-8">
+        <Card className="w-full max-w-xl gap-[22px] p-6 sm:p-10">
           {!selectedRole ? (
             <div
               key="roles"

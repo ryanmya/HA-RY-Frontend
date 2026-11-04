@@ -1,51 +1,21 @@
 import Logo from "@/components/logo";
 import Navbar from "@/components/navbar";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import UserMenu from "@/components/user-menu";
 import { useNavSlots } from "@/hooks/useNavSlots";
-import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
 import { NavLink, Outlet } from "react-router";
-
-type TypeMenu = {
-  to: string;
-  name: string;
-  hide: boolean;
-};
 
 export default function VisitorsLayout() {
   const isLoggedIn = useAuthStore((s) => !!s.accessToken);
   const isOrganizer = useAuthStore((s) => s.user?.userType === "ORGANIZER");
 
-  const navMenu: TypeMenu[] = [
-    {
-      to: "/",
-      name: "Events",
-      hide: false,
-    },
-    {
-      to: "/my-orders",
-      name: "",
-      hide: !isLoggedIn || isOrganizer,
-    },
-    // {
-    //   to: "",
-    //   name: "",
-    //   hide: false,
-    // },
-  ];
-
   const slots = useNavSlots({
-    left: <Logo />,
-    center: (
-      <div className="flex gap-2">
-        {navMenu.map((e) => (
-          <NavLink to={e.to} className={cn(buttonVariants({ variant: "ghost" }), e.hide && "hidden")}>
-            {e.name}
-          </NavLink>
-        ))}
-      </div>
+    left: (
+      <NavLink to="/" aria-label="HA-RY homepage" className="rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
+        <Logo />
+      </NavLink>
     ),
     right: (
       <div className="flex flex-row gap-2.5 items-center">
@@ -71,7 +41,13 @@ export default function VisitorsLayout() {
             >
               Sign In
             </NavLink>
-            <Button variant={"default"}>Create Event</Button>
+            <NavLink
+              to="/register"
+              state={{ createEventSignup: true }}
+              className={buttonVariants({ variant: "default" })}
+            >
+              Create Event
+            </NavLink>
           </>
         )}
       </div>
@@ -79,7 +55,7 @@ export default function VisitorsLayout() {
   });
 
   return (
-    <div className="pb-6">
+    <div>
       <Navbar {...slots} />
       <Outlet />
     </div>

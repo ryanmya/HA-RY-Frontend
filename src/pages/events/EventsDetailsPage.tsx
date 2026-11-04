@@ -1,165 +1,204 @@
+import CustomerAccessDialog from "@/components/customer-access-dialog";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { getEventById } from "@/lib/events";
-import { cn } from "@/lib/utils";
-import type { OrganizerEvent } from "@/types";
-import { Icon } from "@iconify/react";
+import { formatCurrency } from "@/lib/utils";
+import { useAuthStore } from "@/stores/auth";
+import type { OrganizerEvent } from "@/types/event";
+import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
-import { NavLink, useParams } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 
-// Dummy content until the backend serves ratings, organizer profiles and reviews.
-// Real event fields replace these once the event loads.
-const dummy = {
-  name: "Java Jazz Festival 2026",
-  category: "Musik",
-  location: "Jakarta Pusat",
-  startDate: "2026-10-04T16:00:00",
-  endDate: "2026-10-06T23:00:00",
-  availableSeats: 1240,
-  totalSeats: 6000,
-  description:
-    "Nusantara Live kembali ke JIExpo Kemayoran dengan tiga panggung dan 48 penampil selama tiga malam. Edisi 2026 menambah panggung larut malam yang dikurasi bersama label independen Jakarta, serta trek workshop siang untuk pemusik.\n\nGerbang dibuka 15:00. Masuk dengan tiket QR; keluar-masuk diperbolehkan dengan gelang.",
-  rating: 4.7,
-  reviewCount: 38,
-  organizer: { name: "Nusantara Live", eventCount: 26 },
-  reviews: [
-    {
-      id: "1",
-      name: "Dimas A.",
-      rating: 5,
-      verified: true,
-      text: "Suara di panggung utama sangat bagus dan antrean gerbang 3 cepat. Harga makanan masih wajar.",
-    },
-    {
-      id: "2",
-      name: "Sari P.",
-      rating: 4,
-      verified: true,
-      text: "Line-up bagus. Panggung larut malam agak padat — sebaiknya dibatasi tahun depan.",
-    },
-  ],
-};
-
-const formatDateTime = (iso: string) => {
-  const d = new Date(iso);
-  const date = d.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
-  const time = d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", hour12: false }).replace(".", ":");
-  return `${date}, ${time}`;
-};
-
-const formatRating = (n: number) => n.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-
-function RatingBadge({ value }: { value: number }) {
-  return (
-    <Badge variant="success" className="font-semibold">
-      {formatRating(value)} ★
-    </Badge>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col gap-1 rounded-xl bg-background px-4 py-3">
-      <span className="type-label text-muted-foreground">{label}</span>
-      <span className="font-bold">{value}</span>
-    </div>
-  );
-}
-
-// White block; blocks are separated by the page background, like the mockup's gray bands.
-function Block({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <section className={cn("flex flex-col gap-4 bg-card px-8 py-6", className)}>{children}</section>;
-}
+const formatDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
 export default function EventsDetailsPage() {
   const { id } = useParams<{ id: string }>();
-
-  const [event, setEvent] = useState<OrganizerEvent>();
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const userType = useAuthStore((state) => state.user?.userType);
+  const isLoggedIn = Boolean(accessToken);
+  const isCustomer = isLoggedIn && userType === "CUSTOMER";
+  const goBack = () => {
+    if (location.key === "default") {
+      navigate("/");
+    } else {
+      navigate(-1);
+    }
+  };
+  const [result, setResult] = useState<{
+    id: string;
+    event?: OrganizerEvent;
+    error?: string;
+  } | null>(null);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !isCustomer) return;
+
+    let active = true;
     getEventById(id)
-      .then(setEvent)
-      .finally(() => setTimeout(() => setLoading(false), 1000));
-  }, [id]);
+      .then((event) => {
+        if (active) setResult({ id, event });
+      })
+      .catch(() => {
+        if (active) {
+          setResult({
+            id,
+            error: "Gagal memuat detail acara. Silakan coba lagi.",
+          });
+        }
+      });
 
-  if (loading) return <div>Memuat .........</div>;
+    return () => {
+      active = false;
+    };
+  }, [id, isCustomer]);
 
-  const e = { ...dummy, ...event };
-  const hasVoucher = event ? (event.vouchers?.length ?? 0) > 0 : true;
+  if (!isCustomer) {
+    return (
+      <CustomerAccessDialog
+        open
+        onOpenChange={(open) => {
+          if (!open) navigate("/", { replace: true });
+        }}
+        isLoggedIn={isLoggedIn}
+      />
+    );
+  }
+
+  const currentResult = id && result?.id === id ? result : null;
+  const event = currentResult?.event;
+  const error = currentResult?.error;
+  const loading = Boolean(id) && !currentResult;
+
+  if (loading) {
+    return (
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-6 py-8">
+        <Button className="self-start" variant="outline" onClick={goBack}>
+          <ArrowLeft />
+          Kembali
+        </Button>
+        <p className="text-center text-muted-foreground">
+          Memuat detail acara…
+        </p>
+      </div>
+    );
+  }
+
+  if (error || !event) {
+    return (
+      <div className="p-8 text-center">
+        <Button className="mb-4" variant="outline" onClick={goBack}>
+          <ArrowLeft />
+          Kembali
+        </Button>
+        <p className="text-destructive">
+          {error ?? "Acara tidak ditemukan."}
+        </p>
+      </div>
+    );
+  }
+
+  const ticketPrices =
+    event.ticketTypes?.map((ticket) => Number(ticket.price)).filter(Number.isFinite) ?? [];
+  const minPrice = ticketPrices.length ? Math.min(...ticketPrices) : undefined;
+  const maxPrice = ticketPrices.length ? Math.max(...ticketPrices) : undefined;
 
   return (
-    <div className="grid grid-cols-7 gap-10 p-6">
-      <div className="col-span-4 flex flex-col gap-2 overflow-hidden rounded-2xl">
-        {event?.eventPicture && <img src={event.eventPicture} alt={e.name} className="aspect-21/9 w-full object-cover" />}
-
-        <Block className="gap-3">
-          <div className="flex gap-2">
-            <Badge variant="muted">{e.category}</Badge>
-            <Badge variant="muted">{e.location}</Badge>
-            {hasVoucher && <Badge variant="destructive">Voucher tersedia</Badge>}
-          </div>
-          <h1 className="type-page-title">{e.name}</h1>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <RatingBadge value={e.rating} />
-            <span>
-              {e.reviewCount} ulasan ·{" "}
-              <span className="text-primary">{event?.eventOrganizerName ?? e.organizer.name}</span>
-            </span>
-          </div>
-          <div className="mt-2 grid grid-cols-3 gap-3">
-            <Stat label="Mulai" value={formatDateTime(e.startDate)} />
-            <Stat label="Selesai" value={formatDateTime(e.endDate)} />
-            <Stat
-              label="Kursi tersisa"
-              value={`${e.availableSeats.toLocaleString("id-ID")} / ${e.totalSeats.toLocaleString("id-ID")}`}
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-10">
+      <Button className="self-start" variant="outline" onClick={goBack}>
+        <ArrowLeft />
+        Kembali
+      </Button>
+      <div className="grid gap-8 md:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
+        <div className="flex flex-col gap-6">
+          {event.eventPicture ? (
+            <img
+              src={event.eventPicture}
+              alt={`Poster ${event.name}`}
+              className="aspect-video w-full rounded-2xl object-cover"
             />
-          </div>
-        </Block>
-
-        <Block>
-          <h2 className="type-section text-xl">Tentang acara</h2>
-          <div className="flex flex-col gap-3 type-body text-foreground/80">
-            {e.description.split("\n\n").map((p, i) => (
-              <p key={i}>{p}</p>
-            ))}
-          </div>
-        </Block>
-
-        <Block className="flex-row items-center gap-4">
-          <div className="size-14 shrink-0 rounded-full bg-muted-subtle" />
-          <div className="flex flex-1 flex-col">
-            <span className="font-bold">{event?.eventOrganizerName ?? e.organizer.name}</span>
-            <span className="type-meta text-muted-foreground">
-              {formatRating(e.rating)} ★ · {e.reviewCount} ulasan · {e.organizer.eventCount} acara
-            </span>
-          </div>
-          <NavLink to="#" className={cn(buttonVariants({ variant: "link" }), "font-bold")}>
-            Lihat profil <Icon icon="mdi:arrow-right" />
-          </NavLink>
-        </Block>
-
-        <Block>
-          <div className="flex items-center justify-between">
-            <h2 className="type-section text-xl">Ulasan peserta</h2>
-            <NavLink to="#" className={cn(buttonVariants({ variant: "link" }), "font-bold")}>
-              Semua {e.reviewCount} <Icon icon="mdi:arrow-right" />
-            </NavLink>
-          </div>
-          {e.reviews.map((r) => (
-            <div key={r.id} className="flex flex-col gap-3 rounded-xl p-4 ring-1 ring-foreground/10">
-              <div className="flex items-center gap-2">
-                <RatingBadge value={r.rating} />
-                <span className="text-sm font-bold">{r.name}</span>
-                {r.verified && <Badge>Peserta terverifikasi</Badge>}
-              </div>
-              <p className="type-body text-foreground/80">{r.text}</p>
+          ) : (
+            <div className="flex aspect-video items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+              Tidak ada gambar acara
             </div>
-          ))}
-        </Block>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <Badge>{event.category}</Badge>
+            {event.isFree && <Badge variant="success">Gratis</Badge>}
+          </div>
+          <h1 className="text-3xl font-bold">{event.name}</h1>
+          <p className="text-muted-foreground">{event.description}</p>
+          <Card>
+            <CardHeader>
+              <CardTitle>Informasi acara</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              <CardDescription>Lokasi: {event.location}</CardDescription>
+              <CardDescription>
+                Tanggal: {formatDate(event.startDate)}
+                {event.endDate && event.endDate !== event.startDate
+                  ? ` – ${formatDate(event.endDate)}`
+                  : ""}
+              </CardDescription>
+              <CardDescription>
+                {event.availableSeats} kursi tersedia
+              </CardDescription>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <Card className="h-fit">
+            <CardHeader>
+              <CardTitle>Tiket</CardTitle>
+              <CardDescription>
+                {event.isFree
+                  ? "FREE"
+                  : minPrice !== undefined && maxPrice !== undefined
+                    ? minPrice === maxPrice
+                      ? formatCurrency(minPrice, "IDR")
+                      : `${formatCurrency(minPrice, "IDR")} - ${formatCurrency(maxPrice, "IDR")}`
+                    : "Harga tiket belum tersedia"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              {event.ticketTypes?.map((ticket) => (
+                <div
+                  key={ticket.id}
+                  className="flex justify-between gap-4 text-sm"
+                >
+                  <span>{ticket.name}</span>
+                  <span className="font-semibold">
+                    {event.isFree
+                      ? "FREE"
+                      : formatCurrency(Number(ticket.price), "IDR")}
+                  </span>
+                </div>
+              ))}
+              <Button disabled title="Pembelian tiket belum tersedia.">
+                Pembelian tiket belum tersedia
+              </Button>
+            </CardContent>
+          </Card>
+          <Button className="w-full" variant="outline" onClick={goBack}>
+            <ArrowLeft />
+            Kembali ke halaman sebelumnya
+          </Button>
+        </div>
       </div>
-      <div className="col-span-3"></div>
     </div>
   );
 }

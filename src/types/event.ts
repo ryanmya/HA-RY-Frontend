@@ -85,6 +85,8 @@ export type OrganizerEvent = Omit<EventInput, "id" | "ticketTypes" | "eventPictu
 export type EventSummary = OrganizerEvent & {
   /** Cheapest ticket price; 0 for free events. Decimal string or number. */
   lowestPrice?: string | number;
+  minTicketPrice?: string | number;
+  maxTicketPrice?: string | number;
   /** The active voucher with the biggest discount, if any. */
   bestVoucher?: Pick<Voucher, "code" | "discountAmount"> | null;
 };

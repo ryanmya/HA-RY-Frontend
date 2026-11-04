@@ -1,6 +1,6 @@
 import { api } from "@/lib/api";
 import type { EventInput, EventSummary, OrganizerEvent } from "@/types/event";
-import { toQuery, type PageParams, type Paginated } from "@/types/pagination";
+import { toQuery, type PageParams } from "@/types/pagination";
 //get
 export type EventFilters = {
   /** Free text; the backend matches it against every text field (name, location, category, description…). */
@@ -10,18 +10,62 @@ export type EventFilters = {
   to?: string;
 };
 
+type EventListResponse = {
+  data: EventSummary[] | {
+    items: EventSummary[];
+    nextCursor?: string | null;
+  };
+  pagination?: {
+    nextCursor?: string | null;
+  };
+};
+
 // Public list of active events, for the homepage.
-export function getEvents({ limit = 12, cursor, search, from, to }: PageParams & EventFilters = {}) {
-  return api.get<Paginated<EventSummary>>(`/events/all-event${toQuery({ limit, cursor, search, from, to })}`);
+export async function getEvents({ limit = 12, cursor, search, from, to }: PageParams & EventFilters = {}) {
+  const response = await api.getWithResponse<EventListResponse>(
+    `/events/all-event${toQuery({ limit, cursor, search, from, to })}`,
+  );
+
+  if (Array.isArray(response.data)) {
+    return {
+      items: response.data,
+      nextCursor: response.pagination?.nextCursor ?? null,
+    };
+  }
+
+  return {
+    items: response.data.items,
+    nextCursor: response.data.nextCursor ?? null,
+  };
 }
 
 // The logged-in organizer's events; the backend reads the organizer from the access token.
-export function getEventsByOrganizer({ limit = 12, cursor }: PageParams = {}) {
-  return api.get<Paginated<EventSummary>>(`/events/organizer/all-event${toQuery({ limit, cursor })}`);
+export async function getEventsByOrganizer({ limit, cursor }: PageParams = {}) {
+  const page = await api.get<OrganizerEventPage>(
+    `/events/organizer/all-event${toQuery({ limit, cursor })}`,
+  );
+  return {
+    items: page.events,
+    nextCursor: page.hasNextPage ? page.nextCursor : null,
+  };
+}
+
+type OrganizerEventPage = {
+  events: EventSummary[];
+  hasNextPage: boolean;
+  nextCursor: string | null;
+  eventTotal: number;
+};
+
+export async function getOrganizerEventCount() {
+  const page = await api.get<OrganizerEventPage>(
+    `/events/organizer/all-event${toQuery({ limit: 2 })}`,
+  );
+  return page.eventTotal;
 }
 
 export function getEventById(id: string) {
-  return api.get<OrganizerEvent>(`/events/find-event/${id}`);
+  return api.get<OrganizerEvent>(`/events/${id}`);
 }
 // Plain JSON, or multipart when `eventPicture` is set. Files go as they are; other
 // non-string values (ticketTypes, numbers, booleans) are JSON-encoded for the backend to parse.
@@ -39,7 +83,7 @@ export function createEvent(input: EventInput) {
   return api.post<unknown>("/events/event", toBody(input));
 }
 //patch
-// The backend expects the full event (with `id`), not just the changed fields.
+// The backend validates the full event (with `id`), not just the changed fields.
 export function updateEvent(input: EventInput & { id: string }) {
-  return api.patch<OrganizerEvent>("/events/event", toBody(input));
+  return api.patch<OrganizerEvent>("/events/organizer/edit-event", toBody(input));
 }

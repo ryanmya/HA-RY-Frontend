@@ -40,7 +40,7 @@ export default function OrganizerLayout() {
   });
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-0 flex-1">
       <OrganizerSidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <Navbar {...slots} />

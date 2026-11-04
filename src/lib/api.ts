@@ -13,6 +13,11 @@ const BASE_URL = import.meta.env.DEV
   ? "/api"
   : `${API_URL.replace(/\/$/, "")}/api`;
 
+export type ApiResponse<T> = {
+  message: string;
+  data: T;
+};
+
 export class ApiError extends Error {
   status: number;
   data: unknown;
@@ -39,11 +44,11 @@ function onRequest(headers: Headers) {
 }
 
 // Response interceptor: runs after every response.
-async function onResponse(res: Response) {
+async function onResponse(res: Response, unwrap = true) {
   const body = res.status === 204 ? null : await res.json().catch(() => null);
   if (!res.ok) throw new ApiError(res.status, body);
   // The backend wraps every response as { message, data }; callers only need data.
-  return body?.data ?? body;
+  return unwrap ? body?.data ?? body : body;
 }
 
 // TODO: match to the backend's refresh/sign-up response.
@@ -87,7 +92,11 @@ async function send(path: string, init: RequestInit) {
   });
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function request<T>(
+  path: string,
+  init: RequestInit = {},
+  unwrap = true,
+): Promise<T> {
   let res = await send(path, init);
 
   // Access token expired: refresh once and retry. Auth routes are skipped to avoid loops.
@@ -99,12 +108,14 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     res = await send(path, init);
   }
 
-  return (await onResponse(res)) as T;
+  return (await onResponse(res, unwrap)) as T;
 }
 
 export const api = {
   get: <T>(path: string, init?: RequestInit) =>
     request<T>(path, { ...init, method: "GET" }),
+  getWithResponse: <T>(path: string, init?: RequestInit) =>
+    request<T>(path, { ...init, method: "GET" }, false),
   post: <T>(path: string, body?: unknown, init?: RequestInit) =>
     request<T>(path, {
       ...init,
@@ -117,4 +128,14 @@ export const api = {
       method: "PATCH",
       body: body instanceof FormData ? body : JSON.stringify(body),
     }),
+  patchWithResponse: <T>(path: string, body?: unknown, init?: RequestInit) =>
+    request<ApiResponse<T>>(
+      path,
+      {
+        ...init,
+        method: "PATCH",
+        body: body instanceof FormData ? body : JSON.stringify(body),
+      },
+      false,
+    ),
 };

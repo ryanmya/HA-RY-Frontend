@@ -1,13 +1,48 @@
 import Logo from "@/components/logo";
+import { getOrganizerEventCount } from "@/lib/events";
 import { cn } from "@/lib/utils";
+import { useEventEditorStore } from "@/stores/event-editor";
+import { useEffect, useState } from "react";
 import { NavLink } from "react-router";
 import { organizerNav } from "./organizer-nav";
 
 export default function OrganizerSidebar() {
+  const eventsVersion = useEventEditorStore((state) => state.eventsVersion);
+  const [eventCountResult, setEventCountResult] = useState<{
+    version: number;
+    count?: number;
+    error?: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    getOrganizerEventCount()
+      .then((count) => {
+        if (active) setEventCountResult({ version: eventsVersion, count });
+      })
+      .catch(() => {
+        if (active) setEventCountResult({ version: eventsVersion, error: true });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [eventsVersion]);
+
+  const eventCountResultIsCurrent = eventCountResult?.version === eventsVersion;
+  const eventCount = eventCountResultIsCurrent ? eventCountResult.count : undefined;
+  const eventCountError = eventCountResultIsCurrent && eventCountResult.error;
+
   return (
     <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col gap-6 border-r bg-card p-4">
       <div className="flex flex-col px-2">
-        <Logo />
+        <NavLink
+          to="/"
+          aria-label="HA-RY homepage"
+          className="w-fit rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
+        >
+          <Logo />
+        </NavLink>
         <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
           Penyelenggara
         </span>
@@ -32,7 +67,32 @@ export default function OrganizerSidebar() {
             {({ isActive }) => (
               <>
                 {item.label}
-                {item.count !== undefined && (
+                {item.to === "/organizer/events" ? (
+                  <span
+                    className={cn(
+                      "rounded-md px-2 py-0.5 text-xs font-semibold",
+                      isActive
+                        ? "bg-white/20 text-primary-foreground"
+                        : "bg-muted-subtle text-foreground",
+                    )}
+                    aria-label={
+                      eventCountError
+                        ? "Gagal memuat jumlah acara"
+                        : eventCount === undefined
+                          ? "Memuat jumlah acara"
+                          : `${eventCount} acara`
+                    }
+                    title={
+                      eventCountError
+                        ? "Gagal memuat jumlah acara"
+                        : eventCount === undefined
+                          ? "Memuat jumlah acara"
+                          : undefined
+                    }
+                  >
+                    {eventCountError ? "!" : eventCount ?? "…"}
+                  </span>
+                ) : item.count !== undefined && (
                   <span
                     className={cn(
                       "rounded-md px-2 py-0.5 text-xs font-semibold",

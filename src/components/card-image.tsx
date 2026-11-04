@@ -18,6 +18,7 @@ type TypeCardImage = {
   endDate: string;
   place: string;
   price: number;
+  priceLabel?: string;
   discountedPrice?: number;
   seats?: number;
 } & React.ComponentProps<typeof Card>;
@@ -31,6 +32,7 @@ export default function CardImage({
   endDate,
   place,
   price,
+  priceLabel,
   discountedPrice,
   seats,
   className,
@@ -52,12 +54,18 @@ export default function CardImage({
       onKeyDown={onClick ? (e) => e.key === "Enter" && e.currentTarget.click() : undefined}
       {...rest}
     >
-      <div className="absolute inset-0 z-20 aspect-video bg-black/35"></div>
-      <img
-        src={imageUrl}
-        alt="Event Cover"
-        className="relative z-10 aspect-video w-full object-cover brightness-60 grayscale dark:brightness-40"
-      />
+      {imageUrl ? (
+        <>
+          <div className="absolute inset-0 z-20 aspect-video bg-black/35"></div>
+          <img
+            src={imageUrl}
+            alt="Event Cover"
+            className="relative z-10 aspect-video w-full object-cover brightness-60 grayscale dark:brightness-40"
+          />
+        </>
+      ) : (
+        <div className="aspect-video w-full bg-muted-subtle" aria-hidden="true" />
+      )}
       <div className="absolute top-1 left-1 translate-1 z-40 text-destructive">
         {topLeft}
         {/* <Badge variant={"destructive"}>VOUCHER 25%</Badge> */}
@@ -72,26 +80,28 @@ export default function CardImage({
           </Badge> */}
         </CardContent>
         <CardTitle className="type-card-title">{title}</CardTitle>
+        <CardDescription className="flex items-center gap-1">
+          <Icon icon="lucide:map-pin" className="size-4 shrink-0" />
+          <span className="truncate">{place}</span>
+        </CardDescription>
         <CardDescription className="flex items-center">
           <span>
             {startDate} {endDate != undefined && "-"} {endDate}
           </span>
-          <Icon icon="mdi:dot" />
-          <span> {place} </span>
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
         <span>
           <span
             className={cn(
-              "text-xl",
+              "text-sm",
               "text-black",
               "font-extrabold",
               discountedPrice != undefined &&
                 "line-through text-sm text-muted-foreground",
             )}
           >
-            {formatCurrency(price, "IDR")}
+            {priceLabel ?? formatCurrency(price, "IDR")}
           </span>
           {discountedPrice != undefined && (
             <span className="ml-2 text-xl text-destructive font-extrabold">
