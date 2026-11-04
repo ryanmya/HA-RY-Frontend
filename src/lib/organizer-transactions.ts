@@ -108,6 +108,26 @@ export async function getOrganizerTransactionSummaries() {
   return { events: items, eventTotal };
 }
 
+export async function getOrganizerPendingTransactionCount() {
+  let count = 0;
+  const seenCursors = new Set<string>();
+  let cursor: string | null = null;
+
+  while (true) {
+    const page: TransactionSummaryPage = await api.get<TransactionSummaryPage>(
+      `/events/organizer/all-event/transaction-summary${toQuery({ limit: 25, cursor })}`,
+    );
+    count += page.events.reduce((total, event) => total + event.pendingTransaction, 0);
+    if (!page.hasNextPage) return count;
+    if (!page.nextCursor || seenCursors.has(page.nextCursor)) {
+      throw new Error("Invalid cursor returned while loading transaction summaries.");
+    }
+
+    seenCursors.add(page.nextCursor);
+    cursor = page.nextCursor;
+  }
+}
+
 export function getOrganizerEventTransactions(eventId: string) {
   return api.get<OrganizerEventTransaction[]>(`/events/event/${eventId}`);
 }

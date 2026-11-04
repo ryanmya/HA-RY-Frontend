@@ -33,6 +33,7 @@ import {
 } from "@/lib/organizer-transactions";
 import { formatCurrency } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
+import { useEventEditorStore } from "@/stores/event-editor";
 import { ApiError } from "@/lib/api";
 import { CalendarDays, CheckCircle2, Clock3, Eye, LoaderCircle, Search, Ticket, X, ExternalLink, Check, XCircle } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -180,6 +181,7 @@ function DetailStatusCount({
 
 export default function OrganizerTransactionsPage() {
   const isSuperAdmin = useAuthStore((state) => state.user?.role === "SUPER_ADMIN");
+  const markTransactionsChanged = useEventEditorStore((state) => state.markTransactionsChanged);
   const [events, setEvents] = useState<OrganizerTransactionSummary[]>([]);
   const [eventTotal, setEventTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -300,6 +302,7 @@ export default function OrganizerTransactionsPage() {
         transaction.transactionId,
         status,
       );
+      markTransactionsChanged();
       setActionSuccess(response.message);
       setTransactions((current) =>
         current.map((item) =>

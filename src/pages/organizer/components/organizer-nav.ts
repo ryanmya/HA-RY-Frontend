@@ -10,7 +10,7 @@ export const organizerNav: OrganizerNavItem[] = [
   { label: "Ringkasan", to: "/organizer" },
   { label: "Acara", to: "/organizer/events" },
   { label: "Draf Acara", to: "/organizer/drafts" },
-  { label: "Transaksi", to: "/organizer/transactions", count: 7, countTone: "destructive" },
+  { label: "Transaksi", to: "/organizer/transactions", countTone: "destructive" },
   { label: "Peserta", to: "/organizer/attendees" },
   { label: "Voucher", to: "/organizer/vouchers" },
   { label: "Ulasan", to: "/organizer/reviews" },

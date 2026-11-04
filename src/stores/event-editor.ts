@@ -10,6 +10,8 @@ type EventEditorState = {
   // Bumped after an event is published; pages that list events refetch when it changes.
   eventsVersion: number
   markEventsChanged: () => void
+  transactionsVersion: number
+  markTransactionsChanged: () => void
 }
 
 export const useEventEditorStore = create<EventEditorState>()((set) => ({
@@ -19,4 +21,7 @@ export const useEventEditorStore = create<EventEditorState>()((set) => ({
   closeEditor: () => set({ open: false }),
   eventsVersion: 0,
   markEventsChanged: () => set((s) => ({ eventsVersion: s.eventsVersion + 1 })),
+  transactionsVersion: 0,
+  markTransactionsChanged: () =>
+    set((s) => ({ transactionsVersion: s.transactionsVersion + 1 })),
 }))

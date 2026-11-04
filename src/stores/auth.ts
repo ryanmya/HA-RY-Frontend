@@ -8,6 +8,7 @@ export type AuthUser = {
   email: string
   userType: TypeRoles
   role?: "ADMIN" | "SUPER_ADMIN"
+  eventOrganizerName?: string
   profilePicture?: string | null
   referralCode?: string | null
   point?: number
