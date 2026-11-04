@@ -1,4 +1,5 @@
-import { Navigate, Outlet, useLocation } from "react-router";
+import OrganizerAccessDialog from "@/components/organizer-access-dialog";
+import { Navigate, Outlet, useLocation, useNavigate } from "react-router";
 import { useAuthStore } from "@/stores/auth";
 import type { TypeRoles } from "@/types/users";
 
@@ -11,9 +12,24 @@ export function RequireRole({ role }: { role: TypeRoles }) {
   const isLoggedIn = useAuthStore((s) => !!s.accessToken);
   const userType = useAuthStore((s) => s.user?.userType);
   const location = useLocation();
+  const navigate = useNavigate();
 
   if (!isLoggedIn) return <Navigate to="/login" replace state={{ from: location }} />;
-  if (userType !== role) return <Navigate to={homePathFor(userType)} replace />;
+  if (userType !== role) {
+    if (role === "ORGANIZER" && userType === "CUSTOMER") {
+      return (
+        <OrganizerAccessDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) navigate("/", { replace: true });
+          }}
+          onReturnHome={() => navigate("/", { replace: true })}
+        />
+      );
+    }
+
+    return <Navigate to={homePathFor(userType)} replace />;
+  }
   return <Outlet />;
 }
 

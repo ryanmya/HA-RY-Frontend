@@ -50,14 +50,7 @@ export default function VisitorsLayout() {
               className={buttonVariants({ variant: "outline" })}
               to={"/login"}
             >
-              Sign In
-            </NavLink>
-            <NavLink
-              to="/register"
-              state={{ createEventSignup: true }}
-              className={buttonVariants({ variant: "default" })}
-            >
-              Create Event
+              Masuk
             </NavLink>
           </>
         )}
