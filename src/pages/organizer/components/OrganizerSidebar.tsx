@@ -212,7 +212,7 @@ export default function OrganizerSidebar() {
           dateTime={todayDateTime}
           className="text-xs text-muted-foreground"
         >
-          Per tanggal {new Intl.DateTimeFormat("id-ID", {
+          Per {new Intl.DateTimeFormat("id-ID", {
             day: "numeric",
             month: "long",
             year: "numeric",
