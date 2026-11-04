@@ -7,9 +7,12 @@ import { useNavSlots } from "@/hooks/useNavSlots";
 import { useAuthStore } from "@/stores/auth";
 import { NavLink, Outlet } from "react-router";
 
+const pointsFormatter = new Intl.NumberFormat("id-ID");
+
 export default function VisitorsLayout() {
   const isLoggedIn = useAuthStore((s) => !!s.accessToken);
-  const isOrganizer = useAuthStore((s) => s.user?.userType === "ORGANIZER");
+  const user = useAuthStore((s) => s.user);
+  const isOrganizer = user?.userType === "ORGANIZER";
 
   const slots = useNavSlots({
     left: (
@@ -29,7 +32,15 @@ export default function VisitorsLayout() {
                 Dashboard
               </NavLink>
             ) : (
-              <Badge>12.500 pts</Badge>
+              <NavLink
+                to="/points"
+                aria-label="Lihat riwayat poin"
+                className="rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                <Badge className="cursor-pointer">
+                  {pointsFormatter.format(user?.point ?? 0)} pts
+                </Badge>
+              </NavLink>
             )}
             <UserMenu />
           </>

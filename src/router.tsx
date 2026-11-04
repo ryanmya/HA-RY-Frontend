@@ -18,6 +18,7 @@ import OrganizerTransactionsPage from "./pages/organizer/OrganizerTransactionsPa
 import OrganizerVouchersPage from "./pages/organizer/OrganizerVouchersPage";
 import EventsDetailsPage from "./pages/events/EventsDetailsPage";
 import CustomerProfilePage from "./pages/customer/CustomerProfilePage";
+import CustomerPointsPage from "./pages/customer/CustomerPointsPage";
 
 export const router = createBrowserRouter([
   {
@@ -40,6 +41,11 @@ export const router = createBrowserRouter([
             path: "/profile",
             element: <RequireRole role="CUSTOMER" />,
             children: [{ index: true, Component: CustomerProfilePage }],
+          },
+          {
+            path: "/points",
+            element: <RequireRole role="CUSTOMER" />,
+            children: [{ index: true, Component: CustomerPointsPage }],
           },
         ],
       },

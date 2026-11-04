@@ -9,6 +9,8 @@ export type AuthUser = {
   userType: TypeRoles
   role?: "ADMIN" | "SUPER_ADMIN"
   profilePicture?: string | null
+  referralCode?: string | null
+  point?: number
 }
 
 type AuthState = {

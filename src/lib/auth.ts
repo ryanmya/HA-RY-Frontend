@@ -71,9 +71,15 @@ export async function signIn(payload: SignInPayload, userType: TypeRoles) {
 
 // Loads the logged-in user's profile into the store.
 export async function fetchCurrentUser() {
-  const user = await api.get<AuthUser>("/auth/credential")
-  useAuthStore.getState().setUser(user)
-  return user
+  let user = await api.get<AuthUser>("/auth/credential")
+  if(user.userType === "CUSTOMER") {
+    const customerProfile = await api.get<AuthUser>("/customer/profile")
+    user = { ...customerProfile, userType: user.userType }
+    useAuthStore.getState().setUser(user);
+  } else {
+    useAuthStore.getState().setUser(user);
+  }
+  return user;
 }
 
 // Restores the session from the refresh-token cookie, then loads the user.
