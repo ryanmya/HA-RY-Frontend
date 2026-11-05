@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ApiError } from "@/lib/api";
-import { createEvent } from "@/lib/events";
+import { createEvent, FREE_TICKET_TYPES } from "@/lib/events";
 import { useEventDraftsStore } from "@/stores/event-drafts";
 import { useEventEditorStore } from "@/stores/event-editor";
 import type { EventDraft, EventInput, TicketTypeInput } from "@/types/event";
@@ -66,7 +66,7 @@ export default function EventEditorDialog() {
       await createEvent({
         ...event,
         // Free events don't need ticket types; drop empty rows either way.
-        ticketTypes: event.isFree ? [] : event.ticketTypes.filter((t) => t.name.trim()),
+        ticketTypes: event.isFree ? FREE_TICKET_TYPES : event.ticketTypes.filter((t) => t.name.trim()),
         eventPicture: image ?? undefined,
       });
       if (draft) removeDraft(draft.id);

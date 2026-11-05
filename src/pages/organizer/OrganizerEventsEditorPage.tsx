@@ -3,12 +3,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ApiError } from "@/lib/api";
-import { getEventById, updateEvent } from "@/lib/events";
+import { FREE_TICKET_TYPES, getEventById, updateEvent } from "@/lib/events";
 import type { OrganizerEvent, TicketTypeInput } from "@/types/event";
 import { PlusIcon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NavLink, useParams } from "react-router";
-import { ImagePicker, Section, Segmented } from "./components/event-form";
+import { ImagePicker, Section, Segmented, VoucherPanel } from "./components/event-form";
 
 const toDateInput = (iso: string) => iso.slice(0, 10);
 
@@ -88,7 +88,7 @@ export default function OrganizerEventsEditorPage() {
         location,
         isFree,
         ticketTypes: isFree
-          ? []
+          ? FREE_TICKET_TYPES
           : ticketTypes.map((ticket) => ({ name: ticket.name.trim(), price: ticket.price })),
         availableSeats: seats,
         startDate,
@@ -145,145 +145,152 @@ export default function OrganizerEventsEditorPage() {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-6">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex flex-col">
-          <NavLink
-            to="/organizer/events"
-            className="text-sm text-muted-foreground hover:text-foreground"
-          >
-            ← Kembali ke Acara
-          </NavLink>
-          <h1 className="text-2xl font-bold">{event.name}</h1>
+    <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 p-6 lg:grid-cols-3">
+      <div className="flex flex-col gap-6 lg:col-span-2">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col">
+            <NavLink
+              to="/organizer/events"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              ← Kembali ke Acara
+            </NavLink>
+            <h1 className="text-2xl font-bold">{event.name}</h1>
+          </div>
+          <Button onClick={handleSave} disabled={!dirty || invalid || saving}>
+            {saving ? "Menyimpan…" : "Simpan perubahan"}
+          </Button>
         </div>
-        <Button onClick={handleSave} disabled={!dirty || invalid || saving}>
-          {saving ? "Menyimpan…" : "Simpan perubahan"}
-        </Button>
+
+        {error && (
+          <Badge variant="destructive" size="lg">
+            <span>{error}</span>
+          </Badge>
+        )}
+        {saved && !dirty && (
+          <Badge
+            variant="success"
+            size="lg"
+            className="bg-green-500/20 text-green-800"
+          >
+            <span>Perubahan tersimpan.</span>
+          </Badge>
+        )}
+
+        <Section title="Informasi dasar">
+          <ImagePicker file={image} currentUrl={event.eventPicture} onChange={setImage} />
+          <TextField label="Nama acara" value={event.name} disabled />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <TextField label="Kategori" value={event.category} disabled />
+            <TextField
+              label="Lokasi"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+            />
+            <TextField
+              label="Mulai"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+            <TextField
+              label="Selesai"
+              type="date"
+              value={endDate}
+              min={startDate || undefined}
+              aria-invalid={endDate < startDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </div>
+          <TextField
+            label="Jumlah kursi"
+            type="number"
+            min={1}
+            value={seats || ""}
+            aria-invalid={seats < 1}
+            onChange={(e) => setSeats(Number(e.target.value))}
+          />
+          <TextAreaField
+            label="Deskripsi"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </Section>
+
+        <Section
+          title="Jenis tiket"
+          action={
+            <Segmented
+              value={isFree ? "free" : "paid"}
+              options={[
+                { value: "paid", label: "Berbayar" },
+                { value: "free", label: "Gratis" },
+              ]}
+              onChange={(value) => setIsFree(value === "free")}
+            />
+          }
+        >
+          {isFree ? (
+            <p className="text-sm text-muted-foreground">
+              Acara gratis tidak memerlukan jenis tiket.
+            </p>
+          ) : (
+            <>
+              <div className="overflow-hidden rounded-xl ring-1 ring-foreground/10">
+                <div className="grid grid-cols-[1fr_1fr_auto] gap-4 bg-muted-subtle/40 px-4 py-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                  <span>Nama tiket</span>
+                  <span className="text-right">Harga (IDR)</span>
+                  <span className="w-8" />
+                </div>
+                {ticketTypes.map((ticket, index) => (
+                  <div
+                    key={index}
+                    className="grid grid-cols-[1fr_1fr_auto] items-center gap-4 border-t px-4 py-3"
+                  >
+                    <Input
+                      value={ticket.name}
+                      placeholder="Presale"
+                      aria-label={`Nama tiket ${index + 1}`}
+                      onChange={(e) => updateTicket(index, { name: e.target.value })}
+                    />
+                    <Input
+                      type="number"
+                      min={0}
+                      className="text-right"
+                      value={ticket.price}
+                      aria-label={`Harga tiket ${index + 1}`}
+                      onChange={(e) => updateTicket(index, { price: Number(e.target.value) })}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Hapus jenis tiket"
+                      onClick={() =>
+                        setTicketTypes((current) => current.filter((_, ticketIndex) => ticketIndex !== index))
+                      }
+                    >
+                      <XIcon />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <Button
+                variant="outline"
+                className="self-start text-primary"
+                onClick={() => setTicketTypes((current) => [...current, { name: "", price: 0 }])}
+              >
+                <PlusIcon />
+                Tambah jenis tiket
+              </Button>
+            </>
+          )}
+        </Section>
       </div>
 
-      {error && (
-        <Badge variant="destructive" size="lg">
-          <span>{error}</span>
-        </Badge>
-      )}
-      {saved && !dirty && (
-        <Badge
-          variant="success"
-          size="lg"
-          className="bg-green-500/20 text-green-800"
-        >
-          <span>Perubahan tersimpan.</span>
-        </Badge>
-      )}
-
-      <Section title="Informasi dasar">
-        <ImagePicker file={image} currentUrl={event.eventPicture} onChange={setImage} />
-        <TextField label="Nama acara" value={event.name} disabled />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <TextField label="Kategori" value={event.category} disabled />
-          <TextField
-            label="Lokasi"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-          />
-          <TextField
-            label="Mulai"
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-          />
-          <TextField
-            label="Selesai"
-            type="date"
-            value={endDate}
-            min={startDate || undefined}
-            aria-invalid={endDate < startDate}
-            onChange={(e) => setEndDate(e.target.value)}
-          />
-        </div>
-        <TextField
-          label="Jumlah kursi"
-          type="number"
-          min={1}
-          value={seats || ""}
-          aria-invalid={seats < 1}
-          onChange={(e) => setSeats(Number(e.target.value))}
-        />
-        <TextAreaField
-          label="Deskripsi"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-      </Section>
-
-      <Section
-        title="Jenis tiket"
-        action={
-          <Segmented
-            value={isFree ? "free" : "paid"}
-            options={[
-              { value: "paid", label: "Berbayar" },
-              { value: "free", label: "Gratis" },
-            ]}
-            onChange={(value) => setIsFree(value === "free")}
-          />
-        }
-      >
-        {isFree ? (
-          <p className="text-sm text-muted-foreground">
-            Acara gratis tidak memerlukan jenis tiket.
-          </p>
-        ) : (
-          <>
-            <div className="overflow-hidden rounded-xl ring-1 ring-foreground/10">
-              <div className="grid grid-cols-[1fr_1fr_auto] gap-4 bg-muted-subtle/40 px-4 py-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-                <span>Nama tiket</span>
-                <span className="text-right">Harga (IDR)</span>
-                <span className="w-8" />
-              </div>
-              {ticketTypes.map((ticket, index) => (
-                <div
-                  key={index}
-                  className="grid grid-cols-[1fr_1fr_auto] items-center gap-4 border-t px-4 py-3"
-                >
-                  <Input
-                    value={ticket.name}
-                    placeholder="Presale"
-                    aria-label={`Nama tiket ${index + 1}`}
-                    onChange={(e) => updateTicket(index, { name: e.target.value })}
-                  />
-                  <Input
-                    type="number"
-                    min={0}
-                    className="text-right"
-                    value={ticket.price}
-                    aria-label={`Harga tiket ${index + 1}`}
-                    onChange={(e) => updateTicket(index, { price: Number(e.target.value) })}
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Hapus jenis tiket"
-                    onClick={() =>
-                      setTicketTypes((current) => current.filter((_, ticketIndex) => ticketIndex !== index))
-                    }
-                  >
-                    <XIcon />
-                  </Button>
-                </div>
-              ))}
-            </div>
-            <Button
-              variant="outline"
-              className="self-start text-primary"
-              onClick={() => setTicketTypes((current) => [...current, { name: "", price: 0 }])}
-            >
-              <PlusIcon />
-              Tambah jenis tiket
-            </Button>
-          </>
-        )}
-      </Section>
+      {/* Stays in view below the navbar while the form scrolls. */}
+      <div className="flex flex-col gap-6 self-start lg:sticky lg:top-20">
+        <VoucherPanel eventId={event.id} initialVouchers={event.vouchers} />
+      </div>
     </div>
   );
 }

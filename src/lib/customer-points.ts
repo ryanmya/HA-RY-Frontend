@@ -16,7 +16,10 @@ export type CustomerPoint = {
 export type CustomerPointsPage = {
   data: CustomerPoint[];
   pagination: {
+    /** Number of point records, including used and expired ones. */
     pointTotal: number;
+    /** Rupiah total of usable points. */
+    pointBalance: number;
     hasNextPage: boolean;
     nextCursor: string | null;
   };

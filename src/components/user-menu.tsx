@@ -1,5 +1,5 @@
 import { Popover } from "@base-ui/react/popover";
-import { LogOutIcon, PencilLine, UserIcon } from "lucide-react";
+import { LogOutIcon, PencilLine, ReceiptText, UserIcon } from "lucide-react";
 import { NavLink, useNavigate } from "react-router";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { logout } from "@/lib/auth";
@@ -57,6 +57,18 @@ export default function UserMenu() {
               >
                 <PencilLine />
                 Edit profil
+              </NavLink>
+            )}
+            {isCustomer && (
+              <NavLink
+                to="/transactions"
+                className={cn(
+                  buttonVariants({ variant: "ghost" }),
+                  "w-full justify-start",
+                )}
+              >
+                <ReceiptText />
+                Pesanan saya
               </NavLink>
             )}
             <Button

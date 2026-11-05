@@ -1,133 +1,137 @@
-# Feature 2 — Reviews & Organizer Rating
+# Feature 3: Reviews and Organizer Rating
 
 ## Goal
-Let customers review events they attended, and show the **organizer's rating** on their upcoming events so new buyers can judge whether to trust them.
+Customers review events they attended. The reviews build the **organizer's reputation**, which is shown on that organizer's upcoming events, so new buyers can judge whether to trust them.
 
 ## Core idea
 - A review is **written for one finished event**.
-- A review is **displayed on the organizer's other (upcoming) events**.
-- Events do not need to repeat — reviews from past events build the organizer's reputation.
+- Reviews are **shown by organizer** (`eventOrganizerName`), so a brand-new event already shows the organizer's history.
+- An organizer is identified by `eventOrganizerName`, which several organizer accounts can share. Ratings and event counts are **company-wide**.
 
 ```
-Review → Event → Organizer (eventOrganizerName)
+Review → Event → eventOrganizerName
 ```
 
 Example on an upcoming event page:
 ```
 by JakartaFest  ★ 4.7 (85 reviews)
-Recent reviews of JakartaFest events:
-★★★★★ "Great sound!"          — on Jazz Evening (Aug 2026)
-★★★★☆ "Long queue at entry"   — on Indie Fest (Sep 2026)
+★★★★★ "Great sound!"          on Jazz Evening (Aug 2026)
+★★★★☆ "Long queue at entry"   on Indie Fest (Sep 2026)
 ```
 
-## Data model
-Uses the existing `Review` table — no new table needed.
+## Rules (decided)
+| Rule | Value |
+|---|---|
+| Who can review | A customer with a `DONE` transaction for the event |
+| When | Only after the event has ended (`endDate < now`) |
+| How many | **Once per customer per event**, not once per transaction |
+| Rating | Required, an integer from 1 to 5 |
+| Comment | Required, trimmed, 1–500 characters |
+| Edit or delete | **Not allowed**: a review is final |
 
+The schema is unchanged: it uses the existing `Review` table, with no migration. "Once per event" is checked in the service, so the UI should disable the submit button while the request is pending.
+
+## Data model (existing `Review` table)
 | Field | Type | Notes |
 |---|---|---|
 | `id` | uuid | |
-| `customerId` | uuid | who wrote it |
-| `eventId` | uuid | which event it is about |
-| `rating` | int | 1–5 (enforced in Zod) |
-| `comment` | string | currently required — consider `String?` to allow rating-only |
+| `customerId` | uuid | the customer who wrote it |
+| `eventId` | uuid | the event it's about |
+| `rating` | int | 1–5 |
+| `comment` | string | required |
 | `createdAt` | datetime | |
 
-**Proposed schema change (needs a migration, coordinate with team):**
-- `@@unique([customerId, eventId])` — one review per customer per event.
-
-Organizer identity = `eventOrganizerName` (several organizer accounts can share one organization).
-
-## Event status (derived, no column)
-| Status | Rule |
-|---|---|
-| Upcoming | `now < startDate` |
-| Ongoing | `startDate ≤ now ≤ endDate` |
-| Finished | `now > endDate` |
+---
 
 ## Endpoints
 
-### 1. Create review — customer only
-`POST /api/events/:eventId/reviews`
+Base: `/api/reviews`. List responses show only the customer's `name` and `profilePicture`, never their email.
 
-Body (JSON):
+### 1. Create a review (customer only)
+`POST /api/reviews/event/:eventId`
+Header: `Authorization: Bearer <customer token>`
+
 ```json
 { "rating": 5, "comment": "Great event!" }
 ```
 
-Rules (checked in service):
-- Event exists → else `404`
-- Event is **finished** (`endDate < now`) → else `400`
-- Customer has a transaction for this event with status `DONE` → else `403`
-- Customer has not reviewed this event yet → else `409`
-- `rating` 1–5, `comment` max length (e.g. 500) → else `400`
+**Response `201`**: `{ message, data: Review }`
 
-Response `201`: the created review.
+| Code | When |
+|---|---|
+| 400 | Invalid body (rating not 1–5, empty comment, comment over 500 characters, or an unknown field), or the event hasn't ended yet |
+| 401 | Not logged in |
+| 403 | Not a customer, or the customer has no `DONE` transaction for this event |
+| 404 | The event wasn't found |
+| 409 | The customer has already reviewed this event |
 
-### 2. Reviews of one event — public
-`GET /api/events/:eventId/reviews?limit=10&cursor=<id>`
+### 2. Reviews of one event (public)
+`GET /api/reviews/event/:eventId?limit=10&cursor=<reviewId>`
 
-For a finished event's own page / organizer profile history.
-
-Response:
 ```json
 {
-  "message": "...",
   "data": {
     "averageRating": 4.5,
     "totalReviews": 12,
-    "items": [ { "id", "rating", "comment", "createdAt", "customer": { "name", "profilePicture" } } ],
-    "nextCursor": "<id>" | null
+    "items": [
+      { "id": "...", "customerId": "...", "eventId": "...", "rating": 5, "comment": "...", "createdAt": "...",
+        "customer": { "name": "...", "profilePicture": "...|null" } }
+    ],
+    "nextCursor": "<reviewId>" 
   }
 }
 ```
+`nextCursor` is `null` on the last page. Returns `404` if the event isn't found.
 
-### 3. Organizer rating summary — public
-`GET /api/organizers/:eventOrganizerName/reviews?limit=5&cursor=<id>`
+### 3. Organizer review history (public)
+`GET /api/reviews/organizer/:eventOrganizerName?limit=10&cursor=<reviewId>`
 
-Shown on **upcoming** event pages and the organizer profile. Aggregates reviews across **all** events of that organizer.
+Covers every event by that organizer. Use it on upcoming event pages and on the organizer profile.
 
-Response:
+Same shape as endpoint 2, and each item also has:
 ```json
-{
-  "message": "...",
-  "data": {
-    "averageRating": 4.7,
-    "totalReviews": 85,
-    "items": [ { "id", "rating", "comment", "createdAt",
-                 "customer": { "name", "profilePicture" },
-                 "event": { "id", "name", "endDate" } } ],
-    "nextCursor": "<id>" | null
-  }
-}
+"event": { "id": "...", "name": "Jazz Evening", "endDate": "..." }
 ```
+An unknown organizer name returns an empty list (`averageRating: null`, `totalReviews: 0`), not an error.
 
-### 4. (Optional) Rating on event list cards
-Add `organizerRating: { average, count }` to each item in `getEventsPaginated` (public + organizer lists), same place `lowestPrice` / `bestVoucher` were calculated.
+### 4. Organizer public profile (public)
+`GET /api/organizer/public/:organizerId`
+
+```json
+{ "data": { "id": "...", "name": "...", "eventOrganizerName": "...", "profilePicture": "...|null",
+            "totalEvents": 5, "averageRating": 4.3, "totalReviews": 12 } }
+```
+`totalEvents`, `averageRating` and `totalReviews` cover the whole company (`eventOrganizerName`). Returns `404` if the organizer isn't found.
+
+### Pagination (endpoints 2 and 3)
+| Query | Rules |
+|---|---|
+| `limit` | 1–50, default 10 |
+| `cursor` | optional; the `nextCursor` from the previous page |
+
+Results are newest first. Use the same infinite-scroll pattern as the events list.
+
+> `averageRating` is a number, or `null` when there are no reviews. Show "No reviews yet" when `totalReviews` is 0.
+
+---
 
 ## Backend structure
-Follow the voucher module pattern:
-- `src/validators/review.validator.ts` — create body, params, pagination query
-- `src/repositories/review.repository.ts` — create, findByCustomerAndEvent, findByEventPaginated, findByOrganizerPaginated, aggregate
-- `src/modules/review/review.service.ts` — rules above, cursor pagination
-- `src/modules/review/review.controller.ts`
-- `src/routers/review.router.ts` — mount in `app.ts`
-
-Guards:
-- Create → `verifyAccessToken` + `userTypeGuard("CUSTOMER")`
-- Lists → public
-
-Customer data in responses: only `name` and `profilePicture` — never email.
+| Layer | File |
+|---|---|
+| Validator | `src/validators/review.validator.ts` |
+| Repository | `src/repositories/review.repository.ts` |
+| Service | `src/modules/review/review.service.ts` |
+| Controller | `src/modules/review/review.controller.ts` |
+| Router | `src/routers/review.router.ts`, mounted at `/api/reviews` in `app.ts` |
+| Organizer profile | `findPublicProfileById` in `organizer.repository.ts`, route in `organizer.router.ts` |
 
 ## Frontend
-- **Upcoming event detail page:** organizer block with ★ average + count, latest 3–5 reviews (each labelled with the past event name), "See all reviews" → organizer reviews page.
-- **Customer "My tickets" / transaction history:** "Write a review" button on finished events with `DONE` transactions that have no review yet.
-- **Review form:** 1–5 star picker + comment textarea; show backend error messages (already reviewed, event not finished, etc.).
-- **Organizer dashboard (optional):** list of reviews for their events.
-- Lists use the same infinite-scroll pattern as events (`limit` + `nextCursor`).
+- **Upcoming event detail page:** an organizer block with the ★ average and review count (endpoint 3, `limit=3`), and a "See all reviews" link to the organizer page.
+- **Organizer profile page:** endpoint 4, plus the full review list from endpoint 3.
+- **My transactions (detail page):** show a "Write a review" button when `status === "DONE"`, `event.endDate` has passed, and `hasReviewed === false`. `hasReviewed` comes from `GET /transaction/me` and `/transaction/me/:id`, and is per event, so it's the same on every transaction for that event.
+- **Review form:** a 1–5 star picker and a required comment (500-character limit). Show the server's error message.
 
-## Open questions for the team
-1. Should `comment` be optional (rating-only reviews)?
-2. Can customers edit or delete their review?
-3. Add `@@unique([customerId, eventId])` migration — who runs it?
-4. Show organizer rating on event list cards, or only on the detail page?
-5. Minimum review count before showing an average (e.g. hide until ≥ 3 reviews)?
+## Not included (for now)
+- Editing or deleting reviews.
+- The rating on event list cards.
+- A minimum number of reviews before an average is shown.

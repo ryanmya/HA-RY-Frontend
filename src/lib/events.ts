@@ -79,6 +79,9 @@ function toBody(input: EventInput) {
   return form;
 }
 //post
+// Checkout needs a ticketTypeId even for free events, so they get one zero-price ticket type.
+export const FREE_TICKET_TYPES = [{ name: "Gratis", price: 0 }];
+
 export function createEvent(input: EventInput) {
   return api.post<unknown>("/events/event", toBody(input));
 }

@@ -12,7 +12,6 @@ export const organizerNav: OrganizerNavItem[] = [
   { label: "Draf Acara", to: "/organizer/drafts" },
   { label: "Transaksi", to: "/organizer/transactions", countTone: "destructive" },
   { label: "Peserta", to: "/organizer/attendees" },
-  { label: "Voucher", to: "/organizer/vouchers" },
   { label: "Ulasan", to: "/organizer/reviews" },
   { label: "Profil", to: "/organizer/profile" },
 ];

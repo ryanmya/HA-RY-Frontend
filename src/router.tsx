@@ -15,10 +15,11 @@ import OrganizerHomePage from "./pages/organizer/OrganizerHomePage";
 import OrganizerProfilePage from "./pages/organizer/OrganizerProfilePage";
 import OrganizerReviewsPage from "./pages/organizer/OrganizerReviewsPage";
 import OrganizerTransactionsPage from "./pages/organizer/OrganizerTransactionsPage";
-import OrganizerVouchersPage from "./pages/organizer/OrganizerVouchersPage";
 import EventsDetailsPage from "./pages/events/EventsDetailsPage";
 import CustomerProfilePage from "./pages/customer/CustomerProfilePage";
 import CustomerPointsPage from "./pages/customer/CustomerPointsPage";
+import MyTransactionsPage from "./pages/transactions/MyTransactionsPage";
+import TransactionDetailPage from "./pages/transactions/TransactionDetailPage";
 
 export const router = createBrowserRouter([
   {
@@ -47,6 +48,14 @@ export const router = createBrowserRouter([
             element: <RequireRole role="CUSTOMER" />,
             children: [{ index: true, Component: CustomerPointsPage }],
           },
+          {
+            path: "/transactions",
+            element: <RequireRole role="CUSTOMER" />,
+            children: [
+              { index: true, Component: MyTransactionsPage },
+              { path: ":id", Component: TransactionDetailPage },
+            ],
+          },
         ],
       },
       {
@@ -62,7 +71,6 @@ export const router = createBrowserRouter([
               { path: "drafts", Component: OrganizerDraftsPage },
               { path: "transactions", Component: OrganizerTransactionsPage },
               { path: "attendees", Component: OrganizerAttendeesPage },
-              { path: "vouchers", Component: OrganizerVouchersPage },
               { path: "reviews", Component: OrganizerReviewsPage },
               { path: "profile", Component: OrganizerProfilePage },
             ],
